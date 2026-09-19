@@ -1,0 +1,2419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chah Foundation — Girls' Empowerment NGO · Clickable Prototype</title>
+<style>
+  :root {
+    --green: #1b4332;
+    --green-mid: #2d6a4f;
+    --green-soft: #40916c;
+    --green-light: #d8e2dc;
+    --green-pale: #f5f9f7;
+    --rose: #b23a48;
+    --rose-pale: #fdf2f4;
+    --amber: #e0a800;
+    --amber-pale: #fff8e7;
+    --text: #1f2a2e;
+    --muted: #5a6b63;
+    --border: #d8e2dc;
+    --white: #ffffff;
+    --danger: #b3261e;
+    --danger-pale: #fce8e6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text);
+    background: #eef2ef;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--green-mid); text-decoration: none; cursor: pointer; }
+  a:hover { text-decoration: underline; }
+  button { font-family: inherit; cursor: pointer; }
+
+  /* ---------- Wireframe Mode ---------- */
+  body.wire-mode .page-body,
+  body.wire-mode .admin-layout { filter: grayscale(0.55); }
+  body.wire-mode .cause-card .img,
+  body.wire-mode .story-card .img,
+  body.wire-mode .gallery-item {
+    background: repeating-linear-gradient(45deg, #cfcfcf, #cfcfcf 10px, #e0e0e0 10px, #e0e0e0 20px) !important;
+  }
+
+  /* ---------- Top banner ---------- */
+  .wire-banner {
+    position: sticky; top: 0; z-index: 999;
+    background: #111; color: #fff;
+    font-size: 13px; padding: 8px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px;
+  }
+  .wire-banner strong { color: var(--amber); }
+  .nav-switch { display: flex; gap: 6px; flex-wrap: wrap; }
+  .nav-switch button {
+    background: #2a2a2a; color: #ddd; border: 1px solid #444;
+    padding: 5px 12px; border-radius: 4px; font-size: 12px;
+  }
+  .nav-switch button:hover { background: #3a3a3a; color: #fff; }
+  .nav-switch button.active { background: var(--amber); color: #111; border-color: var(--amber); font-weight: 700; }
+  .tools { display: flex; gap: 6px; }
+  .tools button {
+    background: #2a2a2a; color: #ddd; border: 1px solid #444;
+    padding: 5px 10px; border-radius: 4px; font-size: 11.5px;
+  }
+  .tools button:hover { background: #3a3a3a; color: #fff; }
+  .tools button.on { background: var(--amber); color: #111; border-color: var(--amber); font-weight: 700; }
+
+  /* ---------- Screen ---------- */
+  .screen { display: none; max-width: 1240px; margin: 0 auto; padding: 20px 16px 120px; }
+  .screen.active { display: block; }
+
+  /* ---------- Site header ---------- */
+  .top-strip {
+    background: var(--green); color: #cfe0d6; font-size: 12px;
+    padding: 7px 20px; display: flex; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px;
+    border-radius: 8px 8px 0 0;
+  }
+  .top-strip a { color: var(--amber); font-weight: 600; }
+  .site-header {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+    position: sticky; top: 42px; z-index: 100;
+  }
+  .logo {
+    font-weight: 800; font-size: 19px; color: var(--green);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo .mark {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--green) 0%, var(--rose) 100%);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 15px; font-weight: 800;
+  }
+  .nav-links {
+    display: flex; gap: 20px; flex-wrap: wrap; font-size: 14px;
+    align-items: center;
+  }
+  .nav-links a { color: var(--text); font-weight: 500; }
+  .nav-links a:hover { color: var(--green-mid); text-decoration: none; }
+  .nav-links .has-drop { position: relative; }
+  .btn-donate {
+    background: var(--amber); color: #111; font-weight: 700;
+    padding: 10px 20px; border-radius: 6px; border: none;
+    font-size: 14px; white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(224,168,0,0.3);
+  }
+  .btn-donate:hover { background: #c99800; text-decoration: none; }
+
+  /* ---------- Trust bar ---------- */
+  .trust-bar {
+    background: var(--green-pale);
+    padding: 9px 20px;
+    font-size: 11.5px; color: var(--muted);
+    display: flex; gap: 18px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+  }
+  .trust-bar span { white-space: nowrap; }
+  .trust-bar span::before { content: '✓ '; color: var(--green-mid); font-weight: 700; }
+
+  /* ---------- Page body ---------- */
+  .page-body { background: var(--white); border-radius: 0 0 8px 8px; box-shadow: 0 2px 14px rgba(0,0,0,0.06); }
+  .section { padding: 44px 28px; border-bottom: 1px solid var(--border); }
+  .section:last-child { border-bottom: none; }
+  .section.tight { padding: 30px 28px; }
+  .section.dark { background: var(--green); color: #fff; }
+  .section.dark h1, .section.dark h2, .section.dark h3 { color: #fff; }
+  .section.pale { background: var(--green-pale); }
+  .section.rose { background: var(--rose-pale); }
+
+  .section-head { margin-bottom: 24px; }
+  .section-title {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 2.5px;
+    color: var(--rose); font-weight: 800; margin-bottom: 10px;
+  }
+  .section.dark .section-title { color: var(--amber); }
+  h1.wire { font-size: 32px; color: var(--green); margin-bottom: 12px; line-height: 1.2; letter-spacing: -0.4px; }
+  h2.wire { font-size: 26px; color: var(--green); margin-bottom: 12px; line-height: 1.25; letter-spacing: -0.3px; }
+  h3.wire { font-size: 17px; color: var(--green-mid); margin-bottom: 8px; }
+  p.wire { color: #37474f; margin-bottom: 14px; max-width: 720px; }
+  .sub { color: var(--muted); font-size: 15.5px; max-width: 720px; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 60%, #b23a48 140%);
+    color: #fff; padding: 72px 28px 80px; position: relative; overflow: hidden;
+    border-radius: 0;
+  }
+  .hero::after {
+    content: ''; position: absolute; right: -80px; top: -80px;
+    width: 320px; height: 320px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(224,168,0,0.18) 0%, transparent 70%);
+  }
+  .hero-badge {
+    display: inline-block; background: rgba(255,255,255,0.14);
+    padding: 6px 14px; border-radius: 20px; font-size: 12px;
+    font-weight: 600; letter-spacing: 0.5px; margin-bottom: 20px;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .hero-badge::before { content: '● '; color: #6ee7a0; }
+  .hero h1 { font-size: 46px; margin-bottom: 18px; line-height: 1.1; letter-spacing: -0.8px; max-width: 780px; font-weight: 800; }
+  .hero h1 .accent { color: var(--amber); }
+  .hero p { font-size: 19px; opacity: 0.94; max-width: 620px; margin-bottom: 28px; line-height: 1.55; }
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+  .btn-primary {
+    background: var(--amber); color: #111; font-weight: 700;
+    padding: 14px 28px; border-radius: 8px; border: none; font-size: 15.5px;
+    display: inline-block; box-shadow: 0 4px 14px rgba(224,168,0,0.35);
+  }
+  .btn-primary:hover { background: #c99800; text-decoration: none; }
+  .btn-secondary {
+    background: transparent; color: #fff; font-weight: 600;
+    padding: 14px 28px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.55);
+    font-size: 15.5px; display: inline-block;
+  }
+  .btn-secondary:hover { border-color: #fff; text-decoration: none; }
+  .hero-trust {
+    display: flex; gap: 24px; flex-wrap: wrap; font-size: 13px;
+    opacity: 0.85; margin-top: 8px;
+  }
+  .hero-trust span::before { content: '✓ '; color: #6ee7a0; font-weight: 700; }
+  .hero-grid {
+    display: grid; grid-template-columns: 1.4fr 1fr; gap: 40px;
+    align-items: center; position: relative; z-index: 1;
+  }
+  .hero-visual {
+    background: rgba(255,255,255,0.08); border: 2px dashed rgba(255,255,255,0.35);
+    border-radius: 16px; padding: 40px 20px; text-align: center;
+    color: rgba(255,255,255,0.75); font-size: 13px;
+    aspect-ratio: 4/3; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 10px;
+  }
+  .hero-visual svg { width: 48px; height: 48px; stroke: rgba(255,255,255,0.5); stroke-width: 1.5; fill: none; }
+
+  /* ---------- Hero impact strip ---------- */
+  .impact-strip {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0; border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--white);
+  }
+  .impact-strip .item {
+    padding: 24px 20px; text-align: center;
+    border-right: 1px solid var(--border);
+  }
+  .impact-strip .item:last-child { border-right: none; }
+  .impact-strip .num { font-size: 30px; font-weight: 800; color: var(--green); letter-spacing: -0.5px; }
+  .impact-strip .label { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+
+  /* ---------- Why grid ---------- */
+  .why-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px; margin-top: 20px;
+  }
+  .why-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-left: 4px solid var(--rose); border-radius: 10px;
+    padding: 22px 22px;
+  }
+  .why-card .icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--rose-pale); display: flex; align-items: center;
+    justify-content: center; margin-bottom: 12px;
+  }
+  .why-card .icon svg { width: 20px; height: 20px; stroke: var(--rose); stroke-width: 2; fill: none; }
+  .why-card h4 { font-size: 15.5px; color: var(--green); margin-bottom: 6px; }
+  .why-card p { font-size: 13.5px; color: var(--muted); margin: 0; line-height: 1.55; }
+
+  /* ---------- Cause cards ---------- */
+  .cause-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px; margin-top: 20px;
+  }
+  .cause-card {
+    border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden; background: var(--white);
+    transition: transform 0.18s, box-shadow 0.18s; display: block;
+    color: inherit;
+  }
+  .cause-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0,0,0,0.09); text-decoration: none; }
+  .cause-card .img {
+    height: 140px; background: linear-gradient(135deg, #a8c3b5, #7fa892);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .cause-card .img svg { width: 46px; height: 46px; stroke: #fff; stroke-width: 1.6; fill: none; }
+  .cause-card .body { padding: 18px 20px 20px; }
+  .cause-card h4 { font-size: 16.5px; color: var(--green); margin-bottom: 6px; }
+  .cause-card p { font-size: 13.5px; color: var(--muted); margin-bottom: 12px; line-height: 1.55; }
+  .cause-card .meta { font-size: 12.5px; color: var(--rose); font-weight: 700; }
+
+  /* ---------- Story card ---------- */
+  .story-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+    display: grid; grid-template-columns: 1fr 1.2fr; gap: 0;
+  }
+  .story-card .img {
+    background: linear-gradient(135deg, #b23a48, #7a1e28);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 260px;
+  }
+  .story-card .img svg { width: 60px; height: 60px; stroke: rgba(255,255,255,0.8); stroke-width: 1.5; fill: none; }
+  .story-card .body { padding: 32px 36px; }
+  .story-card .quote { font-size: 20px; color: var(--green); font-weight: 600; line-height: 1.45; margin-bottom: 14px; }
+  .story-card .who { font-size: 13.5px; color: var(--muted); margin-bottom: 18px; }
+
+  /* ---------- Testimonial carousel ---------- */
+  .testi-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px; margin-top: 16px;
+  }
+  .testi {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px;
+  }
+  .testi .quote { font-size: 14px; color: var(--text); line-height: 1.65; margin-bottom: 12px; font-style: italic; }
+  .testi .who { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+
+  /* ---------- Quick donate ---------- */
+  .quick-donate {
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-mid) 100%);
+    color: #fff; border-radius: 14px; padding: 32px;
+    margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
+  }
+  .quick-donate h3 { color: #fff; font-size: 22px; margin-bottom: 8px; }
+  .quick-donate p { color: rgba(255,255,255,0.85); font-size: 14px; margin-bottom: 20px; }
+  .quick-donate .amount-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+  .quick-donate .amount-pill {
+    background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.25);
+    padding: 12px 22px; border-radius: 10px; font-weight: 700;
+    color: #fff; cursor: pointer; font-size: 15px; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .quick-donate .amount-pill:hover, .quick-donate .amount-pill.selected {
+    background: var(--amber); color: #111; border-color: var(--amber);
+  }
+  .quick-donate .impact-line { font-size: 13px; color: rgba(255,255,255,0.85); font-style: italic; margin-bottom: 16px; }
+  .quick-donate select {
+    width: 100%; padding: 12px 16px; border-radius: 10px;
+    border: 1.5px solid rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.1); color: #fff; font-size: 14px;
+    font-family: inherit; margin-bottom: 14px;
+  }
+  .quick-donate select option { color: #111; }
+
+  /* ---------- Impact counters ---------- */
+  .impact-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px; margin-top: 20px;
+  }
+  .impact-card {
+    background: var(--green-pale); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px 18px; text-align: center;
+  }
+  .impact-card .num { font-size: 32px; font-weight: 800; color: var(--green); letter-spacing: -0.6px; }
+  .impact-card .label { font-size: 13px; color: var(--muted); margin-top: 5px; }
+
+  /* ---------- Timeline ---------- */
+  .timeline { position: relative; padding-left: 30px; margin-top: 20px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 8px; top: 8px; bottom: 8px;
+    width: 2px; background: var(--green-light);
+  }
+  .tl-item { position: relative; margin-bottom: 24px; }
+  .tl-item::before {
+    content: ''; position: absolute; left: -30px; top: 4px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--white); border: 3px solid var(--rose);
+  }
+  .tl-item .year { font-size: 13px; font-weight: 800; color: var(--rose); margin-bottom: 2px; }
+  .tl-item .event { font-size: 14.5px; color: var(--text); }
+
+  /* ---------- Donor wall ---------- */
+  .donor-wall {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px; margin-top: 16px;
+  }
+  .donor-item {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 18px; font-size: 13px;
+  }
+  .donor-item .name { font-weight: 700; color: var(--green); }
+  .donor-item .cause { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .donor-item .amount { color: var(--rose); font-weight: 700; margin-top: 8px; font-size: 15px; }
+
+  /* ---------- Gallery ---------- */
+  .gallery-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px; margin-top: 16px;
+  }
+  .gallery-item {
+    background: linear-gradient(135deg, #a8c3b5, #7fa892);
+    border-radius: 10px; aspect-ratio: 4/3; display: flex;
+    align-items: center; justify-content: center;
+    cursor: pointer; transition: transform 0.15s; overflow: hidden;
+    position: relative;
+  }
+  .gallery-item:hover { transform: scale(1.02); }
+  .gallery-item svg { width: 40px; height: 40px; stroke: rgba(255,255,255,0.7); stroke-width: 1.5; fill: none; }
+  .gallery-item .caption {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.65), transparent);
+    color: #fff; padding: 20px 12px 10px; font-size: 12px;
+  }
+
+  /* ---------- Partners ---------- */
+  .partner-strip {
+    display: flex; gap: 40px; flex-wrap: wrap; align-items: center;
+    justify-content: center; margin-top: 20px; opacity: 0.75;
+  }
+  .partner-strip .p {
+    background: var(--green-pale); border: 1px dashed var(--border);
+    padding: 18px 30px; border-radius: 8px; font-size: 13px;
+    color: var(--muted); font-weight: 700; letter-spacing: 1px;
+  }
+
+  /* ---------- Newsletter ---------- */
+  .newsletter {
+    background: var(--amber-pale); border: 1.5px dashed var(--amber);
+    border-radius: 12px; padding: 28px; text-align: center;
+  }
+  .newsletter h3 { color: #8a5a00; margin-bottom: 8px; font-size: 20px; }
+  .newsletter p { color: #5a3d00; font-size: 14px; margin-bottom: 18px; }
+  .newsletter form {
+    display: flex; gap: 10px; max-width: 480px; margin: 0 auto;
+    flex-wrap: wrap;
+  }
+  .newsletter input {
+    flex: 1; min-width: 220px; padding: 12px 16px; border-radius: 8px;
+    border: 1.5px solid var(--amber); font-size: 14px; font-family: inherit;
+  }
+
+  /* ---------- Footer ---------- */
+  .site-footer {
+    background: var(--green); color: #cfe0d6; padding: 48px 28px 24px;
+    border-radius: 0 0 8px 8px;
+  }
+  .footer-grid {
+    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 40px; margin-bottom: 30px;
+  }
+  .site-footer h4 { color: #fff; font-size: 14px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 1px; }
+  .site-footer a { color: #cfe0d6; display: block; margin-bottom: 8px; font-size: 13px; }
+  .site-footer a:hover { color: #fff; text-decoration: none; }
+  .site-footer p { color: #a8c3b5; font-size: 13px; line-height: 1.7; }
+  .footer-legal {
+    border-top: 1px solid rgba(255,255,255,0.15); padding-top: 20px;
+    font-size: 12px; opacity: 0.85;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  .social-row { display: flex; gap: 12px; margin-top: 14px; }
+  .social-row a {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(255,255,255,0.1); display: flex !important;
+    align-items: center; justify-content: center; margin: 0;
+  }
+  .social-row a:hover { background: rgba(255,255,255,0.2); }
+  .social-row svg { width: 16px; height: 16px; stroke: #cfe0d6; stroke-width: 1.8; fill: none; }
+
+  /* ---------- Donation flow ---------- */
+  .flow-steps {
+    display: flex; gap: 8px; margin-bottom: 28px; flex-wrap: wrap;
+    justify-content: center;
+  }
+  .flow-step {
+    flex: 1; min-width: 100px; text-align: center; padding: 12px 8px;
+    background: var(--green-pale); border-radius: 10px; font-size: 12px;
+    color: var(--muted); border: 1.5px solid transparent;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .flow-step:hover { background: var(--green-light); }
+  .flow-step.active { background: var(--green); color: #fff; font-weight: 700; border-color: var(--green); }
+  .flow-step.done { background: #d4edda; color: #1b5e20; font-weight: 700; border-color: #a8d5b5; }
+  .flow-step .n { display: block; font-size: 18px; font-weight: 800; margin-bottom: 2px; }
+  .donate-form { max-width: 660px; margin: 0 auto; }
+  .step-panel { display: none; }
+  .step-panel.active { display: block; }
+  .form-row { margin-bottom: 20px; }
+  .form-row label { display: block; font-size: 13.5px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+  .form-row input, .form-row select, .form-row textarea {
+    width: 100%; padding: 13px 16px; border: 1.5px solid var(--border);
+    border-radius: 10px; font-size: 14.5px; font-family: inherit;
+    background: var(--white); color: var(--text);
+  }
+  .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+    outline: none; border-color: var(--green-mid);
+    box-shadow: 0 0 0 3px rgba(45,106,79,0.12);
+  }
+  .radio-group { display: flex; gap: 12px; flex-wrap: wrap; }
+  .radio-pill {
+    flex: 1; min-width: 140px; padding: 14px 16px; border: 1.5px solid var(--border);
+    border-radius: 10px; text-align: center; cursor: pointer; font-size: 14px;
+    font-weight: 600; background: var(--white); font-family: inherit;
+    transition: all 0.15s;
+  }
+  .radio-pill:hover { border-color: var(--green-mid); }
+  .radio-pill.selected { border-color: var(--green); background: var(--green-pale); color: var(--green); }
+  .checkbox-row { display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; margin-top: 8px; }
+  .checkbox-row input { margin-top: 4px; width: auto; }
+  .trust-note {
+    font-size: 12.5px; color: var(--muted); text-align: center;
+    margin-top: 20px; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;
+  }
+  .trust-note span::before { content: '🔒 '; }
+  .step-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
+  .btn-back {
+    background: transparent; border: 1.5px solid var(--border);
+    padding: 12px 22px; border-radius: 8px; font-weight: 600;
+    color: var(--muted); font-size: 14px; font-family: inherit;
+  }
+  .btn-back:hover { border-color: var(--green-mid); color: var(--green-mid); }
+
+  /* ---------- Razorpay modal ---------- */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    z-index: 2000; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .razorpay-modal {
+    background: #fff; border-radius: 12px; max-width: 440px; width: 100%;
+    overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  }
+  .rp-header { background: linear-gradient(135deg, #0b1e4d, #1a3a8f); color: #fff; padding: 20px 22px; }
+  .rp-header .rp-logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .rp-header .rp-merchant { font-size: 12.5px; opacity: 0.85; margin-top: 4px; }
+  .rp-header .rp-amount { font-size: 28px; font-weight: 800; margin-top: 14px; }
+  .rp-body { padding: 20px 22px; }
+  .rp-body h4 { font-size: 12px; color: var(--muted); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 1px; }
+  .rp-method {
+    display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+    border: 1.5px solid var(--border); border-radius: 10px; margin-bottom: 10px;
+    cursor: pointer; font-size: 14.5px;
+  }
+  .rp-method:hover, .rp-method.selected { border-color: var(--green); background: var(--green-pale); }
+  .rp-method .circle {
+    width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border);
+    flex-shrink: 0;
+  }
+  .rp-method.selected .circle { border-color: var(--green); background: var(--green); box-shadow: inset 0 0 0 3px #fff; }
+  .rp-footer {
+    padding: 16px 22px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  }
+  .rp-footer .rp-secure { font-size: 11.5px; color: var(--muted); }
+  .rp-pay {
+    background: #1a3a8f; color: #fff; font-weight: 700;
+    padding: 12px 26px; border-radius: 8px; border: none; font-size: 14.5px;
+  }
+  .rp-pay:hover { background: #142c6d; }
+
+  /* ---------- Thank you ---------- */
+  .thankyou-wrap { max-width: 640px; margin: 0 auto; text-align: center; padding: 24px; }
+  .thankyou-icon {
+    width: 80px; height: 80px; border-radius: 50%; background: #d4edda;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+  }
+  .thankyou-icon svg { width: 42px; height: 42px; stroke: #1b5e20; stroke-width: 3; fill: none; }
+  .thankyou-wrap h1 { font-size: 28px; color: var(--green); margin-bottom: 10px; }
+  .thankyou-wrap p { color: var(--muted); margin-bottom: 22px; font-size: 15.5px; }
+  .thankyou-summary {
+    background: var(--green-pale); border-radius: 12px; padding: 20px 22px;
+    text-align: left; margin-bottom: 22px; font-size: 14.5px;
+  }
+  .thankyou-summary .row { display: flex; justify-content: space-between; padding: 8px 0; }
+  .thankyou-summary .row strong { color: var(--green); }
+  .download-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+  .dl-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--white); border: 1.5px solid var(--border);
+    padding: 12px 20px; border-radius: 10px; font-weight: 600;
+    color: var(--green); font-size: 14px; cursor: pointer;
+    font-family: inherit;
+  }
+  .dl-btn:hover { border-color: var(--green); background: var(--green-pale); }
+  .dl-btn svg { width: 16px; height: 16px; stroke: var(--green); stroke-width: 2; fill: none; }
+  .upsell {
+    background: var(--amber-pale); border: 1.5px dashed var(--amber);
+    border-radius: 12px; padding: 20px; margin-top: 22px; text-align: left;
+  }
+  .upsell strong { color: #8a5a00; font-size: 15px; }
+  .upsell p { font-size: 13.5px; color: #5a3d00; margin: 6px 0 12px; }
+
+  /* ---------- PDF preview ---------- */
+  .pdf-preview {
+    background: #f5f5f0; border: 1px solid var(--border); border-radius: 10px;
+    padding: 28px; max-width: 460px; margin: 20px auto 0;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1); font-size: 12.5px;
+  }
+  .pdf-preview .pdf-head { text-align: center; border-bottom: 2px solid var(--green); padding-bottom: 12px; margin-bottom: 16px; }
+  .pdf-preview .pdf-logo {
+    width: 46px; height: 46px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--green), var(--rose));
+    margin: 0 auto 10px;
+  }
+  .pdf-preview .pdf-head h5 { color: var(--green); font-size: 14px; margin-bottom: 3px; }
+  .pdf-preview .pdf-head .pdf-sub { font-size: 10.5px; color: var(--muted); }
+  .pdf-preview .pdf-title {
+    text-align: center; font-weight: 800; color: var(--green);
+    letter-spacing: 2px; font-size: 12px; margin: 12px 0 16px;
+  }
+  .pdf-preview .pdf-row {
+    display: flex; justify-content: space-between;
+    padding: 5px 0; border-bottom: 1px dotted var(--border); font-size: 12px;
+  }
+  .pdf-preview .pdf-row span:first-child { color: var(--muted); }
+  .pdf-preview .pdf-row span:last-child { font-weight: 600; }
+  .pdf-preview .pdf-sign {
+    margin-top: 20px; display: flex; justify-content: space-between;
+    align-items: flex-end; font-size: 11px; color: var(--muted);
+  }
+  .pdf-preview .pdf-seal {
+    width: 62px; height: 62px; border-radius: 50%;
+    border: 1.5px dashed var(--green-mid); display: flex;
+    align-items: center; justify-content: center;
+    font-size: 9px; color: var(--green-mid); text-align: center;
+    font-weight: 700; line-height: 1.2;
+  }
+
+  /* ---------- Event card ---------- */
+  .event-card {
+    display: flex; gap: 18px; align-items: flex-start;
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px; margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .event-date {
+    background: var(--green); color: #fff; border-radius: 10px;
+    padding: 12px 16px; text-align: center; min-width: 76px;
+  }
+  .event-date .d { font-size: 24px; font-weight: 800; line-height: 1; }
+  .event-date .m { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; }
+  .event-info { flex: 1; min-width: 220px; }
+  .event-info h4 { font-size: 17px; color: var(--green); margin-bottom: 6px; }
+  .event-info p { font-size: 13.5px; color: var(--muted); margin-bottom: 12px; }
+
+  /* ---------- Admin ---------- */
+  .admin-layout {
+    display: grid; grid-template-columns: 250px 1fr; min-height: 720px;
+    background: var(--white); border-radius: 8px; overflow: hidden;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.06);
+  }
+  .admin-side { background: #14281f; color: #cfe0d6; padding: 18px 0; overflow-y: auto; }
+  .admin-side .brand {
+    padding: 0 18px 16px; font-weight: 800; font-size: 15px; color: #fff;
+    border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .admin-side .brand a { color: var(--amber); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .admin-side .group-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: #6f8a7d; padding: 14px 18px 6px;
+  }
+  .admin-side a.nav-item {
+    display: block; padding: 10px 18px; color: #cfe0d6; font-size: 13.5px;
+    border-left: 3px solid transparent; cursor: pointer;
+  }
+  .admin-side a.nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; text-decoration: none; }
+  .admin-side a.nav-item.active {
+    background: rgba(224,168,0,0.12); color: #fff;
+    border-left-color: var(--amber); font-weight: 700;
+  }
+  .admin-main { padding: 26px; overflow-x: auto; }
+  .admin-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+  }
+  .admin-header h2 { font-size: 22px; color: var(--green); }
+  .admin-view { display: none; }
+  .admin-view.active { display: block; }
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--green-pale); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px;
+  }
+  .stat-card .label { font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+  .stat-card .value { font-size: 24px; font-weight: 800; color: var(--green); }
+  .stat-card .delta { font-size: 12px; color: var(--green-mid); margin-top: 3px; }
+  .admin-table {
+    width: 100%; border-collapse: collapse; font-size: 13.5px;
+    background: var(--white); border-radius: 10px; overflow: hidden;
+  }
+  .admin-table th {
+    background: var(--green); color: #fff; text-align: left;
+    padding: 12px 14px; font-weight: 600; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .admin-table td {
+    padding: 12px 14px; border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .admin-table tr:nth-child(even) td { background: var(--green-pale); }
+  .admin-table tr:hover td { background: #eef6f1; }
+  .tag {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 700;
+  }
+  .tag.success { background: #d4edda; color: #1b5e20; }
+  .tag.pending { background: var(--amber-pale); color: #8a5a00; }
+  .tag.failed { background: var(--danger-pale); color: var(--danger); }
+  .tag.rose { background: var(--rose-pale); color: var(--rose); }
+  .empty-state {
+    text-align: center; padding: 70px 20px; color: var(--muted);
+    background: var(--green-pale); border-radius: 12px; border: 1px dashed var(--border);
+  }
+  .empty-state .empty-icon {
+    width: 56px; height: 56px; border-radius: 50%; background: var(--white);
+    margin: 0 auto 14px; display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border);
+  }
+  .empty-state .empty-icon svg { width: 24px; height: 24px; stroke: var(--muted); stroke-width: 1.8; fill: none; }
+
+  /* ---------- Mobile sticky ---------- */
+  .mobile-cta {
+    display: none; position: fixed; bottom: 0; left: 0; right: 0;
+    background: #fff; border-top: 1px solid var(--border);
+    padding: 10px 14px; z-index: 500;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.1);
+    align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .mobile-cta .amount-sel {
+    background: var(--green-pale); padding: 9px 14px; border-radius: 8px;
+    font-weight: 700; color: var(--green); font-size: 13.5px;
+    border: 1px solid var(--border);
+  }
+
+  /* ---------- Toast ---------- */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #111; color: #fff; padding: 14px 24px; border-radius: 10px;
+    font-size: 14px; z-index: 3000; opacity: 0;
+    transition: all 0.3s ease; max-width: 90vw;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 900px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 30px; }
+    .story-card { grid-template-columns: 1fr; }
+    .quick-donate { grid-template-columns: 1fr; gap: 20px; }
+    .footer-grid { grid-template-columns: 1fr 1fr; gap: 28px; }
+  }
+  @media (max-width: 760px) {
+    .site-header { top: 0; padding: 12px 14px; position: relative; }
+    .nav-links { display: none; }
+    .top-strip { display: none; }
+    .hero { padding: 44px 20px 50px; }
+    .hero h1 { font-size: 30px; }
+    .hero p { font-size: 16px; }
+    .section { padding: 30px 18px; }
+    h1.wire { font-size: 24px; }
+    h2.wire { font-size: 21px; }
+    .admin-layout { grid-template-columns: 1fr; }
+    .admin-side { display: flex; overflow-x: auto; padding: 10px 0; }
+    .admin-side .brand, .admin-side .group-label { display: none; }
+    .admin-side a.nav-item {
+      white-space: nowrap; padding: 9px 16px;
+      border-left: none; border-bottom: 3px solid transparent;
+    }
+    .admin-side a.nav-item.active { border-left: none; border-bottom-color: var(--amber); }
+    .wire-banner { font-size: 11.5px; padding: 6px 10px; }
+    .flow-step { font-size: 10.5px; padding: 9px 4px; }
+    .flow-step .n { font-size: 15px; }
+    .mobile-cta { display: flex; }
+    .footer-grid { grid-template-columns: 1fr; gap: 22px; }
+    .impact-strip .item { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body class="wire-mode">
+
+<!-- ============ TOP BANNER ============ -->
+<div class="wire-banner">
+  <div><strong>Chah Foundation</strong> — Girls' Empowerment NGO · Clickable Prototype v3</div>
+  <div class="nav-switch">
+    <button onclick="showScreen('public-home', this)" class="active">Public Site</button>
+    <button onclick="showScreen('donate-flow', this)">Donate Flow</button>
+    <button onclick="showScreen('admin-panel', this)">Admin Panel</button>
+    <button onclick="showScreen('emails', this)">Emails</button>
+    <button onclick="showScreen('sitemap', this)">Sitemap</button>
+  </div>
+  <div class="tools">
+    <button id="wireToggle" onclick="toggleWire()" class="on">▣ Wireframe</button>
+    <button onclick="copyLink()">🔗 Copy link</button>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- PUBLIC : HOME                                                     -->
+<!-- ================================================================ -->
+<div id="public-home" class="screen active">
+
+  <div class="top-strip">
+    <div>📞 Helpline: +91 98XXX XXXXX · Mon–Sat, 10am–6pm</div>
+    <div><a onclick="showScreen('public-volunteer', document.querySelector('.nav-switch button'))">Become a volunteer</a> · <a onclick="showScreen('donor-login', document.querySelector('.nav-switch button'))">Donor Login</a></div>
+  </div>
+
+  <div class="site-header">
+    <div class="logo"><span class="mark">च</span> Chah Foundation</div>
+    <div class="nav-links">
+      <a onclick="showScreen('public-home', document.querySelector('.nav-switch button'))">Home</a>
+      <a onclick="showScreen('public-about', document.querySelector('.nav-switch button'))">About</a>
+      <a onclick="showScreen('public-causes', document.querySelector('.nav-switch button'))">Our Work</a>
+      <a onclick="showScreen('public-impact', document.querySelector('.nav-switch button'))">Impact</a>
+      <a onclick="showScreen('public-gallery', document.querySelector('.nav-switch button'))">Gallery</a>
+      <a onclick="showScreen('public-blog', document.querySelector('.nav-switch button'))">Stories</a>
+      <a onclick="showScreen('public-events', document.querySelector('.nav-switch button'))">Events</a>
+      <a onclick="showScreen('public-volunteer', document.querySelector('.nav-switch button'))">Volunteer</a>
+      <a onclick="showScreen('public-csr', document.querySelector('.nav-switch button'))">CSR</a>
+      <a onclick="showScreen('public-contact', document.querySelector('.nav-switch button'))">Contact</a>
+    </div>
+    <button class="btn-donate" onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])">Donate Now</button>
+  </div>
+
+  <div class="trust-bar">
+    <span>PAN: ABCDE1234F</span>
+    <span>80G Reg: 80G/2024/XXXX</span>
+    <span>Trust Reg: IV-1234/2020</span>
+    <span>12A: 12A/2024/XXXX</span>
+    <span>Registered under Indian Trusts Act</span>
+  </div>
+
+  <div class="page-body">
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="hero-grid">
+        <div>
+          <div class="hero-badge">Working for girls' education &amp; empowerment since 2015</div>
+          <h1>When a girl learns, <span class="accent">a generation rises.</span></h1>
+          <p>Chah Foundation works in villages across India to keep girls in school, delay child marriage, build livelihood skills, and give every girl a voice in her own future.</p>
+          <div class="hero-actions">
+            <a class="btn-primary" onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])">Donate Now</a>
+            <a class="btn-secondary" onclick="showScreen('public-causes', document.querySelector('.nav-switch button'))">See Our Work</a>
+          </div>
+          <div class="hero-trust">
+            <span>80G tax benefit</span>
+            <span>Receipt in 30 seconds</span>
+            <span>96% to programmes</span>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          <div>Hero photo / video — a real girl from a Chah programme</div>
+          <div style="font-size:11px;opacity:0.7;">(with consent, colour-graded to brand)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMPACT STRIP -->
+    <div class="impact-strip">
+      <div class="item"><div class="num">12,480</div><div class="label">Girls in school today</div></div>
+      <div class="item"><div class="num">340</div><div class="label">Villages reached</div></div>
+      <div class="item"><div class="num">1,206</div><div class="label">Child marriages prevented</div></div>
+      <div class="item"><div class="num">2,180</div><div class="label">Girls in skill training</div></div>
+      <div class="item"><div class="num">96%</div><div class="label">Funds to programmes</div></div>
+    </div>
+
+    <!-- WHY CHAH -->
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">Why Chah</div>
+        <h2 class="wire">Three promises we keep to every donor</h2>
+      </div>
+      <div class="why-grid">
+        <div class="why-card">
+          <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          <h4>96 paise of every rupee</h4>
+          <p>Goes directly to programme work. Annual audited financials are public.</p>
+        </div>
+        <div class="why-card">
+          <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+          <h4>Receipt in 30 seconds</h4>
+          <p>Your 80G receipt and certificate arrive by email the moment payment succeeds.</p>
+        </div>
+        <div class="why-card">
+          <div class="icon"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.66 0 3.22.45 4.56 1.24"/></svg></div>
+          <h4>You see the impact</h4>
+          <p>Every donor gets a quarterly update with photos, numbers, and the girls behind them.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHAT WE DO -->
+    <div class="section pale">
+      <div class="section-head">
+        <div class="section-title">Our Work</div>
+        <h2 class="wire">Four programmes built around girls</h2>
+        <p class="sub">Every programme is designed with one question: does this give a girl more control over her own life?</p>
+      </div>
+      <div class="cause-grid">
+        <a class="cause-card" onclick="showScreen('public-cause-detail', document.querySelector('.nav-switch button'))">
+          <div class="img"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+          <div class="body"><h4>Girls' Education</h4><p>Tuition centres, school kits, scholarships, and mentoring — keeping girls in school through Class 12.</p><div class="meta">7,400 girls helped →</div></div>
+        </a>
+        <a class="cause-card" onclick="showScreen('public-cause-detail', document.querySelector('.nav-switch button'))">
+          <div class="img"><svg viewBox="0 0 24 24"><path d="M12 2v6M9 5h6M5 12h14v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-8z"/></svg></div>
+          <div class="body"><h4>Adolescent Health</h4><p>Menstrual health, nutrition, and mental health support for girls aged 10–19.</p><div class="meta">5,200 girls reached →</div></div>
+        </a>
+        <a class="cause-card" onclick="showScreen('public-cause-detail', document.querySelector('.nav-switch button'))">
+          <div class="img"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V11z"/></svg></div>
+          <div class="body"><h4>Skill &amp; Livelihood</h4><p>Tailoring, computers, and job-readiness training for girls who cannot continue formal education.</p><div class="meta">2,180 girls trained →</div></div>
+        </a>
+        <a class="cause-card" onclick="showScreen('public-cause-detail', document.querySelector('.nav-switch button'))">
+          <div class="img"><svg viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11a8 8 0 0 1 16 0c0 6.5-8 11-8 11z"/><circle cx="12" cy="11" r="3"/></svg></div>
+          <div class="body"><h4>Child Marriage Prevention</h4><p>Village-level vigilance, family counselling, and legal support to stop early marriage.</p><div class="meta">1,206 marriages prevented →</div></div>
+        </a>
+      </div>
+    </div>
+
+    <!-- QUICK DONATE -->
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">Donate in 30 seconds</div>
+        <h2 class="wire">Choose an amount — see what it does</h2>
+      </div>
+      <div class="quick-donate">
+        <div>
+          <h3>Your donation, in numbers.</h3>
+          <p>Every amount is tied to something real. Pick one and we'll show you the impact before you pay.</p>
+          <select>
+            <option>Where should this go? — Wherever Needed Most ▾</option>
+            <option>Girls' Education</option>
+            <option>Adolescent Health</option>
+            <option>Skill &amp; Livelihood</option>
+            <option>Child Marriage Prevention</option>
+          </select>
+          <div class="amount-row">
+            <button class="amount-pill" onclick="selectPill(this)">₹500</button>
+            <button class="amount-pill selected" onclick="selectPill(this)">₹1,000</button>
+            <button class="amount-pill" onclick="selectPill(this)">₹2,500</button>
+            <button class="amount-pill" onclick="selectPill(this)">₹5,000</button>
+          </div>
+          <div class="impact-line">₹1,000 keeps one girl in school for a full month — books, uniform, and tuition included.</div>
+          <a class="btn-primary" onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])">Continue to Donate →</a>
+        </div>
+        <div style="background:rgba(255,255,255,0.08);border-radius:12px;padding:24px;border:1px dashed rgba(255,255,255,0.25);">
+          <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;opacity:0.75;margin-bottom:10px;">Impact preview</div>
+          <div style="font-size:14px;line-height:1.9;opacity:0.95;">
+            ₹500 → School kit for 1 girl<br>
+            ₹1,000 → 1 month of tuition + meals<br>
+            ₹2,500 → 1 girl's full annual scholarship<br>
+            ₹5,000 → Skill training for 2 girls
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FEATURED STORY -->
+    <div class="section rose">
+      <div class="section-head">
+        <div class="section-title">Featured Story</div>
+        <h2 class="wire">Meet Sunita. The first girl in her village to finish Class 10.</h2>
+      </div>
+      <div class="story-card">
+        <div class="img"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 22a8 8 0 0 1 16 0"/></svg></div>
+        <div class="body">
+          <div class="quote">"I used to think girls like me could only dream. Now I want to become a teacher and come back to my village."</div>
+          <div class="who">— Sunita, 16, Rajasthan · Sponsored since 2021</div>
+          <a class="btn-primary" onclick="showScreen('public-blog', document.querySelector('.nav-switch button'))">Read her full story →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- DONOR WALL -->
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">Recent Supporters</div>
+        <h2 class="wire">Real people, real giving — updated live</h2>
+        <p class="sub">Donors who chose to be shown publicly. Anonymous donors are hidden automatically.</p>
+      </div>
+      <div class="donor-wall">
+        <div class="donor-item"><div class="name">Rahul M.</div><div class="cause">Girls' Education</div><div class="amount">₹5,000</div></div>
+        <div class="donor-item"><div class="name">Anonymous</div><div class="cause">Wherever Needed</div><div class="amount">₹1,000</div></div>
+        <div class="donor-item"><div class="name">Priya N.</div><div class="cause">Adolescent Health</div><div class="amount">₹2,500</div></div>
+        <div class="donor-item"><div class="name">Sneha K.</div><div class="cause">Skill Training</div><div class="amount">₹500</div></div>
+        <div class="donor-item"><div class="name">Vikram S.</div><div class="cause">Child Marriage Prevention</div><div class="amount">₹10,000</div></div>
+        <div class="donor-item"><div class="name">Anita R.</div><div class="cause">Girls' Education</div><div class="amount">₹1,500</div></div>
+      </div>
+    </div>
+
+    <!-- TESTIMONIALS -->
+    <div class="section pale">
+      <div class="section-head">
+        <div class="section-title">What people say</div>
+        <h2 class="wire">From donors, volunteers, and the girls themselves</h2>
+      </div>
+      <div class="testi-row">
+        <div class="testi">
+          <div class="quote">"I've donated to many NGOs. Chah is the only one that sends me a photo of the girl I'm supporting every quarter."</div>
+          <div class="who">— Rahul Mehta, monthly donor since 2023</div>
+        </div>
+        <div class="testi">
+          <div class="quote">"Their vigilance committee stopped my cousin's marriage when she was 15. They didn't just talk — they showed up."</div>
+          <div class="who">— Meera, community member, Barmer</div>
+        </div>
+        <div class="testi">
+          <div class="quote">"As a CSR partner, I need audited numbers. Chah's reporting is cleaner than most for-profits I work with."</div>
+          <div class="who">— Head of CSR, mid-size manufacturing firm</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTNERS -->
+    <div class="section tight">
+      <div class="section-head">
+        <div class="section-title">Trusted by</div>
+        <h3 class="wire" style="font-size:18px;">Partners and supporters</h3>
+      </div>
+      <div class="partner-strip">
+        <div class="p">PARTNER 1</div>
+        <div class="p">PARTNER 2</div>
+        <div class="p">PARTNER 3</div>
+        <div class="p">PARTNER 4</div>
+        <div class="p">PARTNER 5</div>
+      </div>
+    </div>
+
+    <!-- NEWSLETTER -->
+    <div class="section">
+      <div class="newsletter">
+        <h3>Stay close to the work</h3>
+        <p>One email a month. Real stories, real numbers, no spam. Unsubscribe anytime.</p>
+        <form onsubmit="event.preventDefault();toast('Welcome — check your inbox for a confirmation email.')">
+          <input type="email" placeholder="you@example.com" required>
+          <button class="btn-primary" type="submit">Subscribe</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="site-footer">
+      <div class="footer-grid">
+        <div>
+          <div class="logo" style="color:#fff;margin-bottom:14px;"><span class="mark">च</span> Chah Foundation</div>
+          <p>Working since 2015 for girls' education, health, safety, and livelihood across rural India. Registered under the Indian Trusts Act, 1882.</p>
+          <div class="social-row">
+            <a href="#" aria-label="Facebook"><svg viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></a>
+            <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5"/></svg></a>
+            <a href="#" aria-label="LinkedIn"><svg viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></a>
+            <a href="#" aria-label="YouTube"><svg viewBox="0 0 24 24"><path d="M22 8.5a3 3 0 0 0-2.1-2.1C18.2 6 12 6 12 6s-6.2 0-7.9.4A3 3 0 0 0 2 8.5 31 31 0 0 0 2 12a31 31 0 0 0 .1 3.5 3 3 0 0 0 2.1 2.1C5.8 18 12 18 12 18s6.2 0 7.9-.4a3 3 0 0 0 2.1-2.1A31 31 0 0 0 22 12a31 31 0 0 0-.1-3.5z"/><polygon points="10 15 15 12 10 9 10 15"/></svg></a>
+          </div>
+        </div>
+        <div>
+          <h4>Explore</h4>
+          <a onclick="showScreen('public-about', document.querySelector('.nav-switch button'))">About Us</a>
+          <a onclick="showScreen('public-causes', document.querySelector('.nav-switch button'))">Our Work</a>
+          <a onclick="showScreen('public-impact', document.querySelector('.nav-switch button'))">Impact &amp; Reports</a>
+          <a onclick="showScreen('public-blog', document.querySelector('.nav-switch button'))">Stories</a>
+          <a onclick="showScreen('public-gallery', document.querySelector('.nav-switch button'))">Gallery</a>
+          <a onclick="showScreen('public-events', document.querySelector('.nav-switch button'))">Events</a>
+        </div>
+        <div>
+          <h4>Get Involved</h4>
+          <a onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])">Donate</a>
+          <a onclick="showScreen('public-volunteer', document.querySelector('.nav-switch button'))">Volunteer</a>
+          <a onclick="showScreen('public-csr', document.querySelector('.nav-switch button'))">Corporate / CSR</a>
+          <a onclick="showScreen('donor-login', document.querySelector('.nav-switch button'))">Donor Login</a>
+          <a onclick="showScreen('legal', document.querySelector('.nav-switch button'))">Legal &amp; Policies</a>
+        </div>
+        <div>
+          <h4>Contact</h4>
+          <a href="mailto:hello@chahfoundation.com">hello@chahfoundation.com</a>
+          <a href="tel:+919800000000">+91 98XXX XXXXX</a>
+          <a onclick="showScreen('public-contact', document.querySelector('.nav-switch button'))">New Delhi, India</a>
+          <a href="#">Helpline: +91 98XXX XXXXX</a>
+        </div>
+      </div>
+      <div class="footer-legal">
+        <div>PAN: ABCDE1234F · 80G: 80G/2024/XXXX · Trust Reg: IV-1234/2020 · 12A: 12A/2024/XXXX</div>
+        <div>© 2026 Chah Foundation · <a onclick="showScreen('legal', document.querySelector('.nav-switch button'))">Privacy</a> · <a onclick="showScreen('legal', document.querySelector('.nav-switch button'))">Terms</a> · <a onclick="showScreen('legal', document.querySelector('.nav-switch button'))">Refund Policy</a></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- PUBLIC : ABOUT                                                    -->
+<!-- ================================================================ -->
+<div id="public-about" class="screen">
+  <div class="top-strip">
+    <div>📞 Helpline: +91 98XXX XXXXX · Mon–Sat, 10am–6pm</div>
+    <div><a onclick="showScreen('public-volunteer', document.querySelector('.nav-switch button'))">Become a volunteer</a> · <a onclick="showScreen('donor-login', document.querySelector('.nav-switch button'))">Donor Login</a></div>
+  </div>
+  <div class="site-header">
+    <div class="logo"><span class="mark">च</span> Chah Foundation</div>
+    <div class="nav-links">
+      <a onclick="showScreen('public-home', document.querySelector('.nav-switch button'))">Home</a>
+      <a style="color:var(--rose);font-weight:700;">About</a>
+      <a onclick="showScreen('public-causes', document.querySelector('.nav-switch button'))">Our Work</a>
+      <a onclick="showScreen('public-impact', document.querySelector('.nav-switch button'))">Impact</a>
+      <a onclick="showScreen('public-contact', document.querySelector('.nav-switch button'))">Contact</a>
+    </div>
+    <button class="btn-donate" onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])">Donate Now</button>
+  </div>
+  <div class="trust-bar"><span>PAN: ABCDE1234F</span><span>80G Reg: 80G/2024/XXXX</span><span>Trust Reg: IV-1234/2020</span></div>
+  <div class="page-body">
+
+    <div class="section">
+      <div class="section-title">Our Story</div>
+      <h1 class="wire">From one classroom in 2015 to twelve districts today.</h1>
+      <p class="sub">Chah Foundation began when a group of teachers pooled money to keep six girls in school. Ten years later, we run programmes across girls' education, adolescent health, skill training, and child marriage prevention — reaching over 20,000 girls every year.</p>
+    </div>
+
+    <div class="section pale">
+      <div class="section-title">Mission &amp; Vision</div>
+      <h2 class="wire">Why we exist</h2>
+      <div class="cause-grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));">
+        <div class="why-card" style="border-left-color:var(--green);">
+          <h3 class="wire">Mission</h3>
+          <p>To give every girl — regardless of birth, caste, or circumstance — the education, health, and safety she needs to write her own future.</p>
+        </div>
+        <div class="why-card" style="border-left-color:var(--green);">
+          <h3 class="wire">Vision</h3>
+          <p>An India where no girl is pulled out of school, married before she turns 18, or denied a livelihood because of where she was born.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Milestones</div>
+      <h2 class="wire">Ten years, one step at a time</h2>
+      <div class="timeline">
+        <div class="tl-item"><div class="year">2015</div><div class="event">Six girls sponsored into school by founding teachers in Jaipur.</div></div>
+        <div class="tl-item"><div class="year">2017</div><div class="event">Registered as a Public Charitable Trust. First health camp held.</div></div>
+        <div class="tl-item"><div class="year">2019</div><div class="event">80G and 12A certifications received. Programme extended to 4 districts.</div></div>
+        <div class="tl-item"><div class="year">2021</div><div class="event">Skill training centres launched. 500 girls trained in tailoring and computers.</div></div>
+        <div class="tl-item"><div class="year">2023</div><div class="event">Child marriage prevention committees set up in 120 villages.</div></div>
+        <div class="tl-item"><div class="year">2026</div><div class="event">Over 12,000 girls supported. 340 villages reached across 12 districts.</div></div>
+      </div>
+    </div>
+
+    <div class="section pale">
+      <div class="section-title">Team &amp; Board</div>
+      <h2 class="wire">The people behind the work</h2>
+      <div class="cause-grid">
+        <div class="cause-card"><div class="img"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 22a8 8 0 0 1 16 0"/></svg></div><div class="body"><h4>Anjali Sharma</h4><p>Founder &amp; Trustee</p></div></div>
+        <div class="cause-card"><div class="img"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 22a8 8 0 0 1 16 0"/></svg></div><div class="body"><h4>Rakesh Verma</h4><p>Programme Director</p></div></div>
+        <div class="cause-card"><div class="img"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 22a8 8 0 0 1 16 0"/></svg></div><div class="body"><h4>Priya Nair</h4><p>Head of Health</p></div></div>
+        <div class="cause-card"><div class="img"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 22a8 8 0 0 1 16 0"/></svg></div><div class="body"><h4>Devendra Singh</h4><p>Finance &amp; Compliance</p></div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Legal &amp; Compliance</div>
+      <h2 class="wire">Registered, audited, transparent</h2>
+      <p class="sub">Every document below is downloadable. Annual reports and financials are updated every year from the admin panel.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
+        <a class="amount-pill" onclick="toast('Download would start — 80G certificate PDF.')">📄 80G Certificate</a>
+        <a class="amount-pill" onclick="toast('Download would start — 12A certificate PDF.')">📄 12A Certificate</a>
+        <a class="amount-pill" onclick="toast('Download would start — Trust Deed PDF.')">📄 Trust Deed</a>
+        <a class="amount-pill" onclick="toast('Download would start — Annual Report 2024.')">📄 Annual Report 2024</a>
+        <a class="amount-pill" onclick="toast('Download would start — audited financials.')">📄 Audited Financials</a>
+      </div>
+    </div>
+
+  </div>
+  <div class="site-footer"><div class="footer-legal" style="border-top:none;padding-top:0;"><div>© 2026 Chah Foundation</div><div><a onclick="showScreen('public-home', document.querySelector('.nav-switch button'))">Back to Home</a></div></div></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- PUBLIC : CAUSES GRID                                              -->
+<!-- ================================================================ -->
+<div id="public-causes" class="screen">
+  <div class="top-strip"><div>📞 Helpline: +91 98XXX XXXXX</div><div><a onclick="showScreen('donor-login', document.querySelector('.nav-switch button'))">Donor Login</a></div></div>
+  <div class="site-header">
+    <div class="logo"><span class="mark">च</span> Chah Foundation</div>
+    <div class="nav-links">
+      <a onclick="showScreen('public-home', document.querySelector('.nav-switch button'))">Home</a>
+      <a onclick="showScreen('public-about', document.querySelector('.nav-switch button'))">About</a>
+      <a style="color:var(--rose);font-weight:700;">Our Work</a>
+      <a onclick="showScreen('public-contact', document.querySelector('.nav-switch button'))">Contact</a>
+    </div>
+    <button class="btn-donate" onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])">Donate Now</button>
+  </div>
+  <div class="trust-bar"><span>PAN: ABCDE1234F</span><span>80G Reg: 80G/2024/XXXX</span><span>Trust Reg: IV-1234/2020</span></div>
+  <div class="page-body">
+    <div class="section">
+      <div class="section-title">Our Work</div>
+      <h1 class="wire">Four programmes. One question: does this give a girl more control over her life?</h1>
+      <p class="sub">Each programme is managed by a dedicated team and reported transparently. Click any cause to read its full story and donate directly to it.</p>
+      <div class="cause-grid">
+        <a class="cause-card" onclick="showScreen('public-cause-detail', document.querySelector('.nav-switch button'))">
+          <div class="img"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+          <div class="body"><h4>Girls' Education</h4><p>Tuition centres, school kits, scholarships.</p><div class="meta">7,400 girls helped →</div></div>
+        </a>
+        <a class="cause-card" onclick="showScreen('public-cause-detail', document.querySelector('.nav-switch button'))">
+          <div class="img"><svg viewBox="0 0 24 24"><path d="M12 2v6M9 5h6M5 12h14v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-8z"/></svg></div>
+          <div class="body"><h4>Adolescent Health</h4><p>Menstrual health, nutrition, mental health.</p><div class="meta">5,200 girls reached →</div></div>
+        </a>
+        <a class="cause-card" onclick="showScreen('public-cause-detail', document.querySelector('.nav-switch button'))">
+          <div class="img"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V11z"/></svg></div>
+          <div class="body"><h4>Skill &amp; Livelihood</h4><p>Tailoring, computers, job readiness.</p><div class="meta">2,180 girls trained →</div></div>
+        </a>
+        <a class="cause-card" onclick="showScreen('public-cause-detail', document.querySelector('.nav-switch button'))">
+          <div class="img"><svg viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11a8 8 0 0 1 16 0c0 6.5-8 11-8 11z"/><circle cx="12" cy="11" r="3"/></svg></div>
+          <div class="body"><h4>Child Marriage Prevention</h4><p>Vigilance, counselling, legal support.</p><div class="meta">1,206 marriages prevented →</div></div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- PUBLIC : CAUSE DETAIL                                             -->
+<!-- ================================================================ -->
+<div id="public-cause-detail" class="screen">
+  <div class="top-strip"><div>📞 Helpline: +91 98XXX XXXXX</div><div><a onclick="showScreen('donor-login', document.querySelector('.nav-switch button'))">Donor Login</a></div></div>
+  <div class="site-header">
+    <div class="logo"><span class="mark">च</span> Chah Foundation</div>
+    <div class="nav-links">
+      <a onclick="showScreen('public-home', document.querySelector('.nav-switch button'))">Home</a>
+      <a onclick="showScreen('public-causes', document.querySelector('.nav-switch button'))">Our Work</a>
+      <a style="color:var(--rose);font-weight:700;">Girls' Education</a>
+      <a onclick="showScreen('public-contact', document.querySelector('.nav-switch button'))">Contact</a>
+    </div>
+    <button class="btn-donate" onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])">Donate Now</button>
+  </div>
+  <div class="trust-bar"><span>PAN: ABCDE1234F</span><span>80G Reg: 80G/2024/XXXX</span><span>Trust Reg: IV-1234/2020</span></div>
+  <div class="page-body">
+    <div class="section">
+      <div class="section-title">Girls' Education</div>
+      <h1 class="wire">Keeping first-generation girls in school.</h1>
+      <p class="sub">In the villages we work in, most girls are the first in their family to attend school. The gap is rarely talent — it is books, uniforms, tuition, a safe place to study after class hours, and a family that believes it's worth it.</p>
+      <div class="impact-grid">
+        <div class="impact-card"><div class="num">7,400</div><div class="label">Girls supported</div></div>
+        <div class="impact-card"><div class="num">₹1,800</div><div class="label">Cost per girl / month</div></div>
+        <div class="impact-card"><div class="num">96%</div><div class="label">Retention rate</div></div>
+        <div class="impact-card"><div class="num">82%</div><div class="label">Reach Class 10</div></div>
+      </div>
+    </div>
+    <div class="section pale">
+      <div class="section-title">Campaign Goal</div>
+      <h2 class="wire">₹15,00,000 needed for the 2026–27 school year</h2>
+      <div style="background:var(--green-light);border-radius:8px;height:16px;overflow:hidden;margin:16px 0;">
+        <div style="width:62%;height:100%;background:linear-gradient(90deg,var(--green-mid),var(--rose));"></div>
+      </div>
+      <p><strong>₹9,30,000 raised</strong> · ₹5,70,000 still needed · 218 donors so far</p>
+      <button class="btn-primary" onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])" style="margin-top:8px;">Donate to this Cause →</button>
+    </div>
+    <div class="section">
+      <div class="section-title">How Your Money Is Used</div>
+      <div class="why-grid">
+        <div class="why-card"><h4>₹500</h4><p>School kit — bag, books, uniform, stationery for one girl.</p></div>
+        <div class="why-card"><h4>₹1,000</h4><p>One month of tuition + nutritious meals at our centre.</p></div>
+        <div class="why-card"><h4>₹2,500</h4><p>Full annual scholarship for one girl, including exam fees.</p></div>
+        <div class="why-card"><h4>₹5,000</h4><p>Sponsor two girls for a full school year.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- PUBLIC : IMPACT / REPORTS                                         -->
+<!-- ================================================================ -->
+<div id="public-impact" class="screen">
+  <div class="top-strip"><div>📞 Helpline: +91 98XXX XXXXX</div><div><a onclick="showScreen('donor-login', document.querySelector('.nav-switch button'))">Donor Login</a></div></div>
+  <div class="site-header">
+    <div class="logo"><span class="mark">च</span> Chah Foundation</div>
+    <div class="nav-links">
+      <a onclick="showScreen('public-home', document.querySelector('.nav-switch button'))">Home</a>
+      <a onclick="showScreen('public-about', document.querySelector('.nav-switch button'))">About</a>
+      <a style="color:var(--rose);font-weight:700;">Impact</a>
+      <a onclick="showScreen('public-contact', document.querySelector('.nav-switch button'))">Contact</a>
+    </div>
+    <button class="btn-donate" onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])">Donate Now</button>
+  </div>
+  <div class="trust-bar"><span>PAN: ABCDE1234F</span><span>80G Reg: 80G/2024/XXXX</span><span>Trust Reg: IV-1234/2020</span></div>
+  <div class="page-body">
+    <div class="section">
+      <div class="section-title">Impact &amp; Reports</div>
+      <h1 class="wire">Numbers you can check. Documents you can read.</h1>
+      <div class="impact-grid">
+        <div class="impact-card"><div class="num">12,480</div><div class="label">Girls in school</div></div>
+        <div class="impact-card"><div class="num">1,206</div><div class="label">Child marriages prevented</div></div>
+        <div class="impact-card"><div class="num">2,180</div><div class="label">Girls in skill training</div></div>
+        <div class="impact-card"><div class="num">340</div><div class="label">Villages reached</div></div>
+      </div>
+    </div>
+    <div class="section pale">
+      <div class="section-title">Fund Utilisation 2025–26</div>
+      <h2 class="wire">Where every rupee went</h2>
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:22px;margin-top:16px;">
+        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);"><span>Programme delivery</span><strong>₹4,12,00,000 (87%)</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);"><span>Monitoring &amp; evaluation</span><strong>₹22,00,000 (4.6%)</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);"><span>Admin &amp; overheads</span><strong>₹18,00,000 (3.8%)</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;"><span>Fundraising</span><strong>₹21,00,000 (4.4%)</strong></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Download Reports</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+        <a class="amount-pill" onclick="toast('Annual Report 2025–26 download starting…')">📄 Annual Report 2025–26</a>
+        <a class="amount-pill" onclick="toast('Annual Report 2024–25 download starting…')">📄 Annual Report 2024–25</a>
+        <a class="amount-pill" onclick="toast('Audited financials download starting…')">📄 Audited Financials</a>
+        <a class="amount-pill" onclick="toast('Impact assessment download starting…')">📄 Independent Impact Assessment</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- PUBLIC : GALLERY                                                  -->
+<!-- ================================================================ -->
+<div id="public-gallery" class="screen">
+  <div class="top-strip"><div>📞 Helpline: +91 98XXX XXXXX</div><div><a onclick="showScreen('donor-login', document.querySelector('.nav-switch button'))">Donor Login</a></div></div>
+  <div class="site-header">
+    <div class="logo"><span class="mark">च</span> Chah Foundation</div>
+    <div class="nav-links">
+      <a onclick="showScreen('public-home', document.querySelector('.nav-switch button'))">Home</a>
+      <a onclick="showScreen('public-causes', document.querySelector('.nav-switch button'))">Our Work</a>
+      <a style="color:var(--rose);font-weight:700;">Gallery</a>
+      <a onclick="showScreen('public-contact', document.querySelector('.nav-switch button'))">Contact</a>
+    </div>
+    <button class="btn-donate" onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])">Donate Now</button>
+  </div>
+  <div class="trust-bar"><span>PAN: ABCDE1234F</span><span>80G Reg: 80G/2024/XXXX</span><span>Trust Reg: IV-1234/2020</span></div>
+  <div class="page-body">
+    <div class="section">
+      <div class="section-title">Gallery</div>
+      <h1 class="wire">Moments from the field</h1>
+      <p class="sub">Filter by cause or year. All photos taken with consent.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0;">
+        <button class="amount-pill selected" onclick="selectPill(this)">All</button>
+        <button class="amount-pill" onclick="selectPill(this)">Education</button>
+        <button class="amount-pill" onclick="selectPill(this)">Health</button>
+        <button class="amount-pill" onclick="selectPill(this)">Skills</button>
+        <button class="amount-pill" onclick="selectPill(this)">2026</button>
+        <button class="amount-pill" onclick="selectPill(this)">2025</button>
+      </div>
+      <div class="gallery-grid">
+        <div class="gallery-item" onclick="toast('Lightbox opens with this photo.')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><div class="caption">Health camp — Barmer, 2026</div></div>
+        <div class="gallery-item" onclick="toast('Lightbox opens with this photo.')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><div class="caption">School kit distribution — Jaipur</div></div>
+        <div class="gallery-item" onclick="toast('Lightbox opens with this photo.')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><div class="caption">Skill centre opening — Ajmer</div></div>
+        <div class="gallery-item" onclick="toast('Lightbox opens with this photo.')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><div class="caption">Vigilance committee training</div></div>
+        <div class="gallery-item" onclick="toast('Lightbox opens with this photo.')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><div class="caption">Class 10 results day</div></div>
+        <div class="gallery-item" onclick="toast('Lightbox opens with this photo.')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><div class="caption">Menstrual health workshop</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- PUBLIC : BLOG / STORIES                                           -->
+<!-- ================================================================ -->
+<div id="public-blog" class="screen">
+  <div class="top-strip"><div>📞 Helpline: +91 98XXX XXXXX</div><div><a onclick="showScreen('donor-login', document.querySelector('.nav-switch button'))">Donor Login</a></div></div>
+  <div class="site-header">
+    <div class="logo"><span class="mark">च</span> Chah Foundation</div>
+    <div class="nav-links">
+      <a onclick="showScreen('public-home', document.querySelector('.nav-switch button'))">Home</a>
+      <a onclick="showScreen('public-causes', document.querySelector('.nav-switch button'))">Our Work</a>
+      <a style="color:var(--rose);font-weight:700;">Stories</a>
+      <a onclick="showScreen('public-contact', document.querySelector('.nav-switch button'))">Contact</a>
+    </div>
+    <button class="btn-donate" onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])">Donate Now</button>
+  </div>
+  <div class="trust-bar"><span>PAN: ABCDE1234F</span><span>80G Reg: 80G/2024/XXXX</span><span>Trust Reg: IV-1234/2020</span></div>
+  <div class="page-body">
+    <div class="section">
+      <div class="section-title">Stories</div>
+      <h1 class="wire">News, updates, and voices from the ground</h1>
+      <div class="cause-grid">
+        <a class="cause-card" onclick="toast('Full story opens in blog post view.')">
+          <div class="img"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+          <div class="body"><h4>How 340 villages built their own child-marriage vigilance committees</h4><p>Field notes · 12 March 2026</p></div>
+        </a>
+        <a class="cause-card" onclick="toast('Full story opens in blog post view.')">
+          <div class="img"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+          <div class="body"><h4>Sunita's story: the first girl in her village to finish Class 10</h4><p>Beneficiary story · 28 Feb 2026</p></div>
+        </a>
+        <a class="cause-card" onclick="toast('Full story opens in blog post view.')">
+          <div class="img"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+          <div class="body"><h4>Annual Report 2025–26: where every rupee went</h4><p>Transparency · 15 Jan 2026</p></div>
+        </a>
+        <a class="cause-card" onclick="toast('Full story opens in blog post view.')">
+          <div class="img"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+          <div class="body"><h4>Why we measure girls' confidence, not just their marks</h4><p>Programme design · 02 Dec 2025</p></div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- PUBLIC : EVENTS                                                   -->
+<!-- ================================================================ -->
+<div id="public-events" class="screen">
+  <div class="top-strip"><div>📞 Helpline: +91 98XXX XXXXX</div><div><a onclick="showScreen('donor-login', document.querySelector('.nav-switch button'))">Donor Login</a></div></div>
+  <div class="site-header">
+    <div class="logo"><span class="mark">च</span> Chah Foundation</div>
+    <div class="nav-links">
+      <a onclick="showScreen('public-home', document.querySelector('.nav-switch button'))">Home</a>
+      <a onclick="showScreen('public-causes', document.querySelector('.nav-switch button'))">Our Work</a>
+      <a style="color:var(--rose);font-weight:700;">Events</a>
+      <a onclick="showScreen('public-contact', document.querySelector('.nav-switch button'))">Contact</a>
+    </div>
+    <button class="btn-donate" onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])">Donate Now</button>
+  </div>
+  <div class="trust-bar"><span>PAN: ABCDE1234F</span><span>80G Reg: 80G/2024/XXXX</span><span>Trust Reg: IV-1234/2020</span></div>
+  <div class="page-body">
+    <div class="section">
+      <div class="section-title">Upcoming Events</div>
+      <h1 class="wire">Join us — or fund a drive from anywhere</h1>
+
+      <div class="event-card">
+        <div class="event-date"><div class="d">12</div><div class="m">Oct</div></div>
+        <div class="event-info">
+          <h4>Free Health Camp — Barmer</h4>
+          <p>General check-ups, adolescent health support, and free medicines. 400+ girls and families expected.</p>
+          <button class="btn-primary" style="padding:10px 20px;font-size:14px;" onclick="toast('RSVP recorded — confirmation email sent.')">RSVP</button>
+        </div>
+      </div>
+
+      <div class="event-card">
+        <div class="event-date"><div class="d">26</div><div class="m">Oct</div></div>
+        <div class="event-info">
+          <h4>Skill Centre Graduation — Ajmer</h4>
+          <p>120 girls graduate from the tailoring and computer training programme. Open to donors and partners.</p>
+          <button class="btn-primary" style="padding:10px 20px;font-size:14px;" onclick="toast('RSVP recorded — confirmation email sent.')">RSVP</button>
+        </div>
+      </div>
+
+      <div class="event-card">
+        <div class="event-date"><div class="d">08</div><div class="m">Nov</div></div>
+        <div class="event-info">
+          <h4>Annual Fundraiser Gala — Delhi</h4>
+          <p>An evening with donors, partners, and the girls whose lives you've changed.</p>
+          <button class="btn-primary" style="padding:10px 20px;font-size:14px;" onclick="toast('RSVP recorded — confirmation email sent.')">RSVP</button>
+        </div>
+      </div>
+
+      <h3 class="wire" style="margin-top:32px;">Past Events</h3>
+      <div class="event-card" style="opacity:0.7;">
+        <div class="event-date" style="background:var(--muted);"><div class="d">14</div><div class="m">Aug</div></div>
+        <div class="event-info">
+          <h4>Independence Day School Kit Distribution</h4>
+          <p>Delivered school kits to 320 girls across 4 villages.</p>
+          <span class="tag success">Completed</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- PUBLIC : VOLUNTEER                                                -->
+<!-- ================================================================ -->
+<div id="public-volunteer" class="screen">
+  <div class="top-strip"><div>📞 Helpline: +91 98XXX XXXXX</div><div><a onclick="showScreen('donor-login', document.querySelector('.nav-switch button'))">Donor Login</a></div></div>
+  <div class="site-header">
+    <div class="logo"><span class="mark">च</span> Chah Foundation</div>
+    <div class="nav-links">
+      <a onclick="showScreen('public-home', document.querySelector('.nav-switch button'))">Home</a>
+      <a onclick="showScreen('public-causes', document.querySelector('.nav-switch button'))">Our Work</a>
+      <a style="color:var(--rose);font-weight:700;">Volunteer</a>
+      <a onclick="showScreen('public-contact', document.querySelector('.nav-switch button'))">Contact</a>
+    </div>
+    <button class="btn-donate" onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])">Donate Now</button>
+  </div>
+  <div class="trust-bar"><span>PAN: ABCDE1234F</span><span>80G Reg: 80G/2024/XXXX</span><span>Trust Reg: IV-1234/2020</span></div>
+  <div class="page-body">
+    <div class="section">
+      <div class="section-title">Volunteer</div>
+      <h1 class="wire">Give your time. It changes lives too.</h1>
+      <p class="sub">We need teachers, doctors, counsellors, designers, writers, and organisers. Whether you can give 2 hours a week or 2 months a year, there's a place for you.</p>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+          <h4>Teach</h4><p>Take a class at a tuition centre — weekends work too.</p>
+        </div>
+        <div class="why-card">
+          <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 2v6M9 5h6M5 12h14v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-8z"/></svg></div>
+          <h4>Assist at camps</h4><p>Help doctors and staff at health camps and drives.</p>
+        </div>
+        <div class="why-card">
+          <div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+          <h4>Design / write</h4><p>Help us tell stories better — remotely, on your schedule.</p>
+        </div>
+      </div>
+
+      <h2 class="wire" style="margin-top:32px;">Sign up to volunteer</h2>
+      <div class="donate-form" style="margin:0;">
+        <div class="form-row"><label>Full Name</label><input type="text" placeholder="Your name"></div>
+        <div class="form-row"><label>Email</label><input type="email" placeholder="you@example.com"></div>
+        <div class="form-row"><label>Phone</label><input type="tel" placeholder="+91 98XXX XXXXX"></div>
+        <div class="form-row"><label>City</label><input type="text" placeholder="e.g. Delhi"></div>
+        <div class="form-row"><label>Area of Interest</label>
+          <select><option>Teaching</option><option>Health camp support</option><option>Design / content</option><option>Counselling</option><option>Event organisation</option><option>Other</option></select>
+        </div>
+        <div class="form-row"><label>Availability</label>
+          <select><option>Weekends only</option><option>Weekday evenings</option><option>Full-time (short term)</option><option>Remote / flexible</option></select>
+        </div>
+        <button class="btn-primary" onclick="toast('Thank you — we will be in touch within 3 working days.')">Submit application →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- PUBLIC : CSR                                                      -->
+<!-- ================================================================ -->
+<div id="public-csr" class="screen">
+  <div class="top-strip"><div>📞 Helpline: +91 98XXX XXXXX</div><div><a onclick="showScreen('donor-login', document.querySelector('.nav-switch button'))">Donor Login</a></div></div>
+  <div class="site-header">
+    <div class="logo"><span class="mark">च</span> Chah Foundation</div>
+    <div class="nav-links">
+      <a onclick="showScreen('public-home', document.querySelector('.nav-switch button'))">Home</a>
+      <a onclick="showScreen('public-about', document.querySelector('.nav-switch button'))">About</a>
+      <a style="color:var(--rose);font-weight:700;">CSR</a>
+      <a onclick="showScreen('public-contact', document.querySelector('.nav-switch button'))">Contact</a>
+    </div>
+    <button class="btn-donate" onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])">Donate Now</button>
+  </div>
+  <div class="trust-bar"><span>PAN: ABCDE1234F</span><span>80G Reg: 80G/2024/XXXX</span><span>Trust Reg: IV-1234/2020</span><span>12A: 12A/2024/XXXX</span></div>
+  <div class="page-body">
+    <div class="section">
+      <div class="section-title">Corporate Partnerships</div>
+      <h1 class="wire">Partner with us on measurable, audited impact for girls.</h1>
+      <p class="sub">We work with CSR teams across India on girls' education, health, and skill development. Every rupee is tracked, reported, and independently audited.</p>
+      <div class="impact-grid">
+        <div class="impact-card"><div class="num">12</div><div class="label">Corporate partners</div></div>
+        <div class="impact-card"><div class="num">₹2.4 Cr</div><div class="label">CSR funds deployed</div></div>
+        <div class="impact-card"><div class="num">100%</div><div class="label">Audit compliance</div></div>
+      </div>
+    </div>
+    <div class="section pale">
+      <div class="section-title">Enquiry Form</div>
+      <h2 class="wire">Tell us about your CSR focus</h2>
+      <div class="donate-form" style="margin:0;">
+        <div class="form-row"><label>Company Name</label><input type="text" placeholder="e.g. Acme Industries Pvt Ltd"></div>
+        <div class="form-row"><label>Contact Person</label><input type="text"></div>
+        <div class="form-row"><label>Work Email</label><input type="email"></div>
+        <div class="form-row"><label>Area of Interest</label>
+          <select><option>Girls' Education</option><option>Adolescent Health</option><option>Skill &amp; Livelihood</option><option>Child Marriage Prevention</option><option>Multiple</option></select>
+        </div>
+        <div class="form-row"><label>Message</label><textarea rows="4"></textarea></div>
+        <button class="btn-primary" onclick="toast('Enquiry received — our partnerships team will reply within 2 working days.')">Send Enquiry →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- PUBLIC : CONTACT                                                  -->
+<!-- ================================================================ -->
+<div id="public-contact" class="screen">
+  <div class="top-strip"><div>📞 Helpline: +91 98XXX XXXXX</div><div><a onclick="showScreen('donor-login', document.querySelector('.nav-switch button'))">Donor Login</a></div></div>
+  <div class="site-header">
+    <div class="logo"><span class="mark">च</span> Chah Foundation</div>
+    <div class="nav-links">
+      <a onclick="showScreen('public-home', document.querySelector('.nav-switch button'))">Home</a>
+      <a onclick="showScreen('public-about', document.querySelector('.nav-switch button'))">About</a>
+      <a style="color:var(--rose);font-weight:700;">Contact</a>
+    </div>
+    <button class="btn-donate" onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])">Donate Now</button>
+  </div>
+  <div class="trust-bar"><span>PAN: ABCDE1234F</span><span>80G Reg: 80G/2024/XXXX</span><span>Trust Reg: IV-1234/2020</span></div>
+  <div class="page-body">
+    <div class="section">
+      <div class="section-title">Contact Us</div>
+      <h1 class="wire">We'd love to hear from you.</h1>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:32px;margin-top:24px;">
+        <div>
+          <h3 class="wire">Registered Office</h3>
+          <p>Chah Foundation<br>123, Sector 4, New Delhi – 110001<br>India</p>
+          <h3 class="wire" style="margin-top:22px;">Reach Us</h3>
+          <p><a href="mailto:hello@chahfoundation.com">hello@chahfoundation.com</a><br><a href="tel:+919800000000">+91 98XXX XXXXX</a><br>Mon–Sat, 10am–6pm IST</p>
+          <h3 class="wire" style="margin-top:22px;">Helpline for girls &amp; families</h3>
+          <p>Confidential support line: <strong>+91 98XXX XXXXX</strong></p>
+          <div style="background:var(--green-pale);border:1px dashed var(--border);border-radius:10px;padding:50px;text-align:center;color:var(--muted);font-size:13px;margin-top:18px;">🗺️ Google Map — embedded placeholder</div>
+        </div>
+        <div>
+          <div class="form-row"><label>Your Name</label><input type="text"></div>
+          <div class="form-row"><label>Email</label><input type="email"></div>
+          <div class="form-row"><label>Phone</label><input type="tel"></div>
+          <div class="form-row"><label>Message</label><textarea rows="5"></textarea></div>
+          <button class="btn-primary" onclick="toast('Message sent — we reply within 1 working day.')">Send Message →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- PUBLIC : LEGAL                                                    -->
+<!-- ================================================================ -->
+<div id="legal" class="screen">
+  <div class="site-header">
+    <div class="logo"><span class="mark">च</span> Chah Foundation</div>
+    <div class="nav-links"><a onclick="showScreen('public-home', document.querySelector('.nav-switch button'))">← Back to site</a></div>
+    <button class="btn-donate" onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])">Donate Now</button>
+  </div>
+  <div class="page-body">
+    <div class="section">
+      <div class="section-title">Legal</div>
+      <h1 class="wire">Privacy Policy · Terms of Use · Refund Policy</h1>
+      <p class="sub">Required for Razorpay merchant approval. Final content will be drafted with the foundation's legal advisor. Structure shown here.</p>
+      <h3 class="wire" style="margin-top:28px;">Privacy Policy</h3>
+      <ul style="margin-left:20px;color:#37474f;">
+        <li>What donor data we collect and why</li>
+        <li>How long we retain it (8 years for tax compliance, then anonymised)</li>
+        <li>Who we share it with (Razorpay, email provider — no third parties)</li>
+        <li>How to request deletion</li>
+      </ul>
+      <h3 class="wire" style="margin-top:28px;">Terms of Use</h3>
+      <ul style="margin-left:20px;color:#37474f;">
+        <li>Acceptable use of the website</li>
+        <li>Intellectual property of stories and photographs</li>
+        <li>Limitation of liability</li>
+      </ul>
+      <h3 class="wire" style="margin-top:28px;">Refund Policy</h3>
+      <ul style="margin-left:20px;color:#37474f;">
+        <li>Donations are non-refundable unless made in error</li>
+        <li>Refund requests accepted within 7 days by email</li>
+        <li>Refunds processed via Razorpay within 5–7 working days</li>
+        <li>80G receipt for refunded donations stands cancelled</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- PUBLIC : DONOR LOGIN                                              -->
+<!-- ================================================================ -->
+<div id="donor-login" class="screen">
+  <div class="site-header">
+    <div class="logo"><span class="mark">च</span> Chah Foundation</div>
+    <div class="nav-links"><a onclick="showScreen('public-home', document.querySelector('.nav-switch button'))">← Back to site</a></div>
+  </div>
+  <div class="page-body">
+    <div class="section" style="max-width:480px;margin:0 auto;">
+      <div class="section-title">Donor Login</div>
+      <h1 class="wire">View your past donations and receipts.</h1>
+      <p class="sub">Enter the email or phone number you used when donating. We'll send a one-time login link — no password needed.</p>
+      <div class="form-row"><label>Email or Phone</label><input type="text" placeholder="you@example.com"></div>
+      <button class="btn-primary" style="width:100%;" onclick="toast('Login link sent — check your inbox.')">Send me a login link →</button>
+      <div class="trust-note" style="margin-top:22px;"><span>Secure</span><span>One-time link</span><span>No password</span></div>
+    </div>
+
+    <div class="section pale">
+      <div class="section-title">Once logged in — Donor Dashboard</div>
+      <h2 class="wire">Your giving at a glance</h2>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="label">Total given</div><div class="value">₹18,500</div><div class="delta">Across 6 donations</div></div>
+        <div class="stat-card"><div class="label">Recurring status</div><div class="value">Active</div><div class="delta">₹1,000 / month</div></div>
+        <div class="stat-card"><div class="label">Last donation</div><div class="value">₹2,500</div><div class="delta">12 Sep 2026 · Health</div></div>
+      </div>
+      <h3 class="wire" style="margin-top:24px;">Donation History</h3>
+      <table class="admin-table">
+        <thead><tr><th>Date</th><th>Cause</th><th>Amount</th><th>Type</th><th>Receipt</th></tr></thead>
+        <tbody>
+          <tr><td>12 Sep 2026</td><td>Adolescent Health</td><td>₹2,500</td><td>One-time</td><td><a onclick="toast('Downloading 80G receipt PDF…')">Download</a></td></tr>
+          <tr><td>12 Aug 2026</td><td>Wherever Needed</td><td>₹1,000</td><td>Monthly</td><td><a onclick="toast('Downloading 80G receipt PDF…')">Download</a></td></tr>
+          <tr><td>12 Jul 2026</td><td>Wherever Needed</td><td>₹1,000</td><td>Monthly</td><td><a onclick="toast('Downloading 80G receipt PDF…')">Download</a></td></tr>
+          <tr><td>02 Jun 2026</td><td>Girls' Education</td><td>₹5,000</td><td>One-time</td><td><a onclick="toast('Downloading 80G receipt PDF…')">Download</a></td></tr>
+          <tr><td>15 Mar 2026</td><td>Skill Training</td><td>₹1,000</td><td>One-time</td><td><a onclick="toast('Downloading 80G receipt PDF…')">Download</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- DONATION FLOW                                                     -->
+<!-- ================================================================ -->
+<div id="donate-flow" class="screen">
+  <div class="site-header">
+    <div class="logo"><span class="mark">च</span> Chah Foundation</div>
+    <div class="nav-links"><a onclick="showScreen('public-home', document.querySelector('.nav-switch button'))">← Back to Site</a></div>
+    <div style="font-size:12.5px;color:var(--muted);">🔒 Secure payment via Razorpay</div>
+  </div>
+  <div class="page-body">
+    <div class="section">
+      <div class="section-title">Donate</div>
+      <h1 class="wire">Your donation reaches her in minutes.</h1>
+
+      <div class="flow-steps" id="flowSteps">
+        <div class="flow-step active" data-step="1" onclick="goStep(1)"><span class="n">1</span>Type</div>
+        <div class="flow-step" data-step="2" onclick="goStep(2)"><span class="n">2</span>Cause</div>
+        <div class="flow-step" data-step="3" onclick="goStep(3)"><span class="n">3</span>Amount</div>
+        <div class="flow-step" data-step="4" onclick="goStep(4)"><span class="n">4</span>Details</div>
+        <div class="flow-step" data-step="5" onclick="goStep(5)"><span class="n">5</span>Payment</div>
+        <div class="flow-step" data-step="6" onclick="goStep(6)"><span class="n">6</span>Receipt</div>
+      </div>
+
+      <div class="donate-form">
+        <div class="step-panel active" data-panel="1">
+          <div class="form-row">
+            <label>Donation Type</label>
+            <div class="radio-group">
+              <button class="radio-pill selected" onclick="selectPill(this)">One-time</button>
+              <button class="radio-pill" onclick="selectPill(this)">Monthly (recurring)</button>
+            </div>
+          </div>
+          <div class="step-nav"><span></span><button class="btn-primary" onclick="goStep(2)">Continue →</button></div>
+        </div>
+
+        <div class="step-panel" data-panel="2">
+          <div class="form-row">
+            <label>Choose a Cause</label>
+            <select>
+              <option>Wherever Needed Most (default)</option>
+              <option>Girls' Education</option>
+              <option>Adolescent Health</option>
+              <option>Skill &amp; Livelihood</option>
+              <option>Child Marriage Prevention</option>
+            </select>
+          </div>
+          <div class="step-nav"><button class="btn-back" onclick="goStep(1)">← Back</button><button class="btn-primary" onclick="goStep(3)">Continue →</button></div>
+        </div>
+
+        <div class="step-panel" data-panel="3">
+          <div class="form-row">
+            <label>Amount</label>
+            <div class="amount-row" style="display:flex;gap:10px;flex-wrap:wrap;">
+              <button class="amount-pill" onclick="selectPill(this)">₹500</button>
+              <button class="amount-pill selected" onclick="selectPill(this)">₹1,000</button>
+              <button class="amount-pill" onclick="selectPill(this)">₹2,500</button>
+              <button class="amount-pill" onclick="selectPill(this)">₹5,000</button>
+            </div>
+            <div class="impact-line" style="color:var(--muted);font-style:italic;font-size:13px;margin:12px 0;">₹1,000 keeps one girl in school for a full month — books, uniform, tuition, and meals.</div>
+            <input type="number" placeholder="Or enter a custom amount (₹)">
+          </div>
+          <div class="step-nav"><button class="btn-back" onclick="goStep(2)">← Back</button><button class="btn-primary" onclick="goStep(4)">Continue →</button></div>
+        </div>
+
+        <div class="step-panel" data-panel="4">
+          <div class="form-row">
+            <label>Your Details</label>
+            <input type="text" placeholder="Full Name" style="margin-bottom:10px;">
+            <input type="email" placeholder="Email address" style="margin-bottom:10px;">
+            <input type="tel" placeholder="Phone — for WhatsApp receipt" style="margin-bottom:10px;">
+            <input type="text" placeholder="PAN (optional — required for 80G tax benefit)" style="margin-bottom:10px;">
+            <textarea rows="2" placeholder="Address (for 80G receipt)"></textarea>
+            <div class="checkbox-row"><input type="checkbox" id="anon"><label for="anon">Donate anonymously (hide my name from the donor wall)</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="honour"><label for="honour">This donation is in memory / honour of someone</label></div>
+          </div>
+          <div class="step-nav"><button class="btn-back" onclick="goStep(3)">← Back</button><button class="btn-primary" onclick="goStep(5)">Continue →</button></div>
+        </div>
+
+        <div class="step-panel" data-panel="5">
+          <div class="form-row" style="text-align:center;">
+            <p class="sub" style="margin:0 auto 16px;">You will now be redirected to Razorpay's secure checkout to complete your ₹1,000 donation to <strong>Wherever Needed Most</strong>.</p>
+            <div style="background:var(--green-pale);border-radius:12px;padding:18px;font-size:13.5px;text-align:left;max-width:440px;margin:16px auto;">
+              <div style="display:flex;justify-content:space-between;padding:6px 0;"><span>Donation</span><strong style="color:var(--green);">₹1,000</strong></div>
+              <div style="display:flex;justify-content:space-between;padding:6px 0;"><span>Processing fee</span><span>₹0 (absorbed)</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px 0 0;border-top:1px solid var(--border);margin-top:8px;"><span>Total</span><strong style="color:var(--green);">₹1,000</strong></div>
+            </div>
+          </div>
+          <div class="step-nav"><button class="btn-back" onclick="goStep(4)">← Back</button><button class="btn-primary" onclick="openRazorpay()">Proceed to Razorpay →</button></div>
+        </div>
+
+        <div class="step-panel" data-panel="6">
+          <div class="thankyou-wrap">
+            <div class="thankyou-icon"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
+            <h1>Thank you, Rahul.</h1>
+            <p>Your donation has been received. Your 80G tax receipt and certificate are on their way to your inbox right now.</p>
+            <div class="thankyou-summary">
+              <div class="row"><span>Amount</span><strong>₹1,000</strong></div>
+              <div class="row"><span>Cause</span><strong>Wherever Needed Most</strong></div>
+              <div class="row"><span>Date</span><strong>18 September 2026</strong></div>
+              <div class="row"><span>Receipt No.</span><strong>CHAH-2026-004128</strong></div>
+            </div>
+            <div class="download-buttons">
+              <button class="dl-btn" onclick="toast('Downloading 80G receipt PDF…')"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Download 80G Receipt</button>
+              <button class="dl-btn" onclick="toast('Downloading certificate PDF…')"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Download Certificate</button>
+            </div>
+            <div class="upsell">
+              <strong>Turn this into monthly giving</strong>
+              <p>₹1,000 a month keeps one girl in school all year. Set it up in 30 seconds — cancel anytime.</p>
+              <button class="btn-primary" style="font-size:14px;padding:10px 20px;" onclick="toast('Monthly giving flow would open here.')">Set up monthly →</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="trust-note">
+          <span>Secure via Razorpay</span>
+          <span>SSL encrypted</span>
+          <span>80G tax benefit</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section pale">
+      <div class="section-title">What the 80G Receipt Looks Like</div>
+      <h2 class="wire">Actual PDF preview — sent to every donor</h2>
+      <div class="pdf-preview">
+        <div class="pdf-head">
+          <div class="pdf-logo"></div>
+          <h5>CHAH FOUNDATION</h5>
+          <div class="pdf-sub">PAN: ABCDE1234F · 80G: 80G/2024/XXXX · Trust Reg: IV-1234/2020</div>
+        </div>
+        <div class="pdf-title">80G TAX RECEIPT</div>
+        <div class="pdf-row"><span>Receipt No.</span><span>CHAH-2026-004128</span></div>
+        <div class="pdf-row"><span>Date</span><span>18 Sep 2026</span></div>
+        <div class="pdf-row"><span>Donor Name</span><span>Rahul Mehta</span></div>
+        <div class="pdf-row"><span>PAN</span><span>ABCDE1234F</span></div>
+        <div class="pdf-row"><span>Donation Amount</span><span>₹1,000</span></div>
+        <div class="pdf-row"><span>Payment Mode</span><span>UPI / Razorpay</span></div>
+        <div class="pdf-row"><span>Cause</span><span>Girls' Education</span></div>
+        <div style="margin-top:14px;font-size:10px;color:var(--muted);line-height:1.5;font-style:italic;">This donation is eligible for deduction under Section 80G of the Income Tax Act, 1961. Donations are used for charitable purposes and no goods or services were provided in exchange. Subject to statutory rules.</div>
+        <div class="pdf-sign">
+          <div>Authorised Signatory</div>
+          <div class="pdf-seal">OFFICIAL<br>SEAL</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- RAZORPAY MODAL                                                    -->
+<!-- ================================================================ -->
+<div class="modal-overlay" id="razorpayModal">
+  <div class="razorpay-modal">
+    <div class="rp-header">
+      <div class="rp-logo">Razorpay</div>
+      <div class="rp-merchant">Paying Chah Foundation</div>
+      <div class="rp-amount">₹1,000</div>
+    </div>
+    <div class="rp-body">
+      <h4>Choose payment method</h4>
+      <div class="rp-method selected" onclick="selectRp(this)">
+        <div class="circle"></div><div><strong>UPI</strong><div style="font-size:11.5px;color:var(--muted);">GPay · PhonePe · Paytm · BHIM</div></div>
+      </div>
+      <div class="rp-method" onclick="selectRp(this)">
+        <div class="circle"></div><div><strong>Card</strong><div style="font-size:11.5px;color:var(--muted);">Credit or debit card</div></div>
+      </div>
+      <div class="rp-method" onclick="selectRp(this)">
+        <div class="circle"></div><div><strong>Netbanking</strong><div style="font-size:11.5px;color:var(--muted);">All major banks</div></div>
+      </div>
+      <div class="rp-method" onclick="selectRp(this)">
+        <div class="circle"></div><div><strong>Wallet</strong><div style="font-size:11.5px;color:var(--muted);">Amazon Pay · Mobikwik</div></div>
+      </div>
+    </div>
+    <div class="rp-footer">
+      <div class="rp-secure">🔒 PCI-DSS compliant</div>
+      <button class="rp-pay" onclick="completePayment()">Pay ₹1,000</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- ADMIN PANEL                                                       -->
+<!-- ================================================================ -->
+<div id="admin-panel" class="screen">
+  <div class="admin-layout">
+    <aside class="admin-side">
+      <div class="brand">Chah Admin <a onclick="showScreen('public-home', document.querySelector('.nav-switch button'))">View Site →</a></div>
+
+      <div class="group-label">Overview</div>
+      <a class="nav-item active" onclick="showAdmin('dashboard', this)">📊 Dashboard</a>
+
+      <div class="group-label">Money</div>
+      <a class="nav-item" onclick="showAdmin('donations', this)">💰 Donations</a>
+      <a class="nav-item" onclick="showAdmin('donors', this)">👥 Donors</a>
+      <a class="nav-item" onclick="showAdmin('subscriptions', this)">🔁 Subscriptions</a>
+      <a class="nav-item" onclick="showAdmin('reports', this)">📈 Reports</a>
+
+      <div class="group-label">Content</div>
+      <a class="nav-item" onclick="showAdmin('causes', this)">📚 Causes</a>
+      <a class="nav-item" onclick="showAdmin('blog', this)">📝 Stories / Blog</a>
+      <a class="nav-item" onclick="showAdmin('gallery', this)">🖼️ Gallery</a>
+      <a class="nav-item" onclick="showAdmin('events', this)">📅 Events</a>
+      <a class="nav-item" onclick="showAdmin('documents', this)">📄 Documents</a>
+
+      <div class="group-label">People</div>
+      <a class="nav-item" onclick="showAdmin('volunteers', this)">🙋 Volunteers</a>
+      <a class="nav-item" onclick="showAdmin('enquiries', this)">✉️ Enquiries</a>
+
+      <div class="group-label">System</div>
+      <a class="nav-item" onclick="showAdmin('settings', this)">⚙️ Settings</a>
+    </aside>
+
+    <main class="admin-main">
+
+      <!-- DASHBOARD -->
+      <div class="admin-view active" data-view="dashboard">
+        <div class="admin-header">
+          <h2>Dashboard</h2>
+          <div style="font-size:13px;color:var(--muted);">Last updated: just now</div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="label">Today's donations</div><div class="value">₹47,500</div><div class="delta">↑ 12% vs yesterday</div></div>
+          <div class="stat-card"><div class="label">This month</div><div class="value">₹8,42,000</div><div class="delta">↑ 8% vs last month</div></div>
+          <div class="stat-card"><div class="label">Total donors</div><div class="value">3,184</div><div class="delta">+42 new this week</div></div>
+          <div class="stat-card"><div class="label">Recurring donors</div><div class="value">612</div><div class="delta">↑ 5% MoM</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-bottom:24px;">
+          <div class="stat-card" style="background:var(--white);border:1px solid var(--border);">
+            <div class="label" style="margin-bottom:12px;">Donations over time (last 7 days)</div>
+            <div style="display:flex;align-items:flex-end;gap:6px;height:100px;">
+              <div style="flex:1;background:var(--green-light);height:40%;border-radius:3px;"></div>
+              <div style="flex:1;background:var(--green-light);height:55%;border-radius:3px;"></div>
+              <div style="flex:1;background:var(--green-light);height:35%;border-radius:3px;"></div>
+              <div style="flex:1;background:var(--green-light);height:70%;border-radius:3px;"></div>
+              <div style="flex:1;background:var(--green-light);height:60%;border-radius:3px;"></div>
+              <div style="flex:1;background:var(--green-mid);height:100%;border-radius:3px;"></div>
+              <div style="flex:1;background:var(--green-mid);height:85%;border-radius:3px;"></div>
+            </div>
+          </div>
+          <div class="stat-card" style="background:var(--white);border:1px solid var(--border);">
+            <div class="label" style="margin-bottom:12px;">Donations by cause</div>
+            <div style="font-size:13.5px;line-height:2.2;">
+              <div>Girls' Education <strong style="float:right;">₹3,42,000</strong></div>
+              <div>Adolescent Health <strong style="float:right;">₹2,18,000</strong></div>
+              <div>Skill Training <strong style="float:right;">₹1,84,000</strong></div>
+              <div>Marriage Prevention <strong style="float:right;">₹98,000</strong></div>
+            </div>
+          </div>
+        </div>
+        <h3 class="wire" style="margin-bottom:12px;">Recent Donations</h3>
+        <table class="admin-table">
+          <thead><tr><th>Date</th><th>Donor</th><th>Cause</th><th>Amount</th><th>Type</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>18 Sep 2026</td><td>Rahul Mehta</td><td>Girls' Education</td><td>₹5,000</td><td>One-time</td><td><span class="tag success">Success</span></td></tr>
+            <tr><td>18 Sep 2026</td><td>Anonymous</td><td>Wherever Needed</td><td>₹1,000</td><td>Monthly</td><td><span class="tag success">Success</span></td></tr>
+            <tr><td>18 Sep 2026</td><td>Priya Nair</td><td>Adolescent Health</td><td>₹2,500</td><td>One-time</td><td><span class="tag success">Success</span></td></tr>
+            <tr><td>17 Sep 2026</td><td>Vikram Shah</td><td>Marriage Prevention</td><td>₹10,000</td><td>One-time</td><td><span class="tag pending">Pending</span></td></tr>
+            <tr><td>17 Sep 2026</td><td>Sneha Kulkarni</td><td>Skill Training</td><td>₹500</td><td>Monthly</td><td><span class="tag success">Success</span></td></tr>
+            <tr><td>17 Sep 2026</td><td>Amit Reddy</td><td>Girls' Education</td><td>₹1,500</td><td>One-time</td><td><span class="tag failed">Failed</span></td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
+          <div class="stat-card" style="background:var(--amber-pale);border-color:var(--amber);">
+            <div class="label" style="color:#8a5a00;">⚠️ Alerts</div>
+            <div style="font-size:13px;color:#5a3d00;margin-top:6px;">3 failed recurring payments need follow-up</div>
+          </div>
+          <div class="stat-card" style="background:var(--rose-pale);">
+            <div class="label" style="color:var(--rose);">📬 Pending enquiries</div>
+            <div style="font-size:13px;margin-top:6px;">2 CSR enquiries awaiting response</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DONATIONS -->
+      <div class="admin-view" data-view="donations">
+        <div class="admin-header">
+          <h2>All Donations</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="amount-pill" onclick="toast('CSV export starting…')">Export CSV</button>
+            <button class="amount-pill selected" onclick="toast('Offline donation form would open here.')">+ Record Offline Donation</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+          <button class="amount-pill selected" onclick="selectPill(this)">All</button>
+          <button class="amount-pill" onclick="selectPill(this)">Success</button>
+          <button class="amount-pill" onclick="selectPill(this)">Pending</button>
+          <button class="amount-pill" onclick="selectPill(this)">Failed</button>
+          <button class="amount-pill" onclick="selectPill(this)">Recurring</button>
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>Date</th><th>Donor</th><th>Cause</th><th>Amount</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td>18 Sep 2026</td><td>Rahul Mehta</td><td>Girls' Education</td><td>₹5,000</td><td>One-time</td><td><span class="tag success">Success</span></td><td><a onclick="toast('Donation detail opens here.')">View</a> · <a onclick="toast('Receipt re-sent to donor.')">Resend</a></td></tr>
+            <tr><td>18 Sep 2026</td><td>Anonymous</td><td>Wherever Needed</td><td>₹1,000</td><td>Monthly</td><td><span class="tag success">Success</span></td><td><a onclick="toast('Donation detail opens here.')">View</a> · <a onclick="toast('Receipt re-sent to donor.')">Resend</a></td></tr>
+            <tr><td>18 Sep 2026</td><td>Priya Nair</td><td>Adolescent Health</td><td>₹2,500</td><td>One-time</td><td><span class="tag success">Success</span></td><td><a onclick="toast('Donation detail opens here.')">View</a> · <a onclick="toast('Receipt re-sent to donor.')">Resend</a></td></tr>
+            <tr><td>17 Sep 2026</td><td>Vikram Shah</td><td>Marriage Prevention</td><td>₹10,000</td><td>One-time</td><td><span class="tag pending">Pending</span></td><td><a onclick="toast('Donation detail opens here.')">View</a></td></tr>
+            <tr><td>17 Sep 2026</td><td>Sneha Kulkarni</td><td>Skill Training</td><td>₹500</td><td>Monthly</td><td><span class="tag success">Success</span></td><td><a onclick="toast('Donation detail opens here.')">View</a> · <a onclick="toast('Receipt re-sent to donor.')">Resend</a></td></tr>
+            <tr><td>17 Sep 2026</td><td>Amit Reddy</td><td>Girls' Education</td><td>₹1,500</td><td>One-time</td><td><span class="tag failed">Failed</span></td><td><a onclick="toast('Donation detail opens here.')">View</a> · <a onclick="toast('Retry link sent to donor.')">Retry</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- DONORS -->
+      <div class="admin-view" data-view="donors">
+        <div class="admin-header">
+          <h2>Donors</h2>
+          <div style="font-size:13.5px;color:var(--muted);">3,184 donors · 612 recurring</div>
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>Donor</th><th>Email</th><th>Total Given</th><th>Donations</th><th>Last Gift</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Rahul Mehta</td><td>rahul@example.com</td><td>₹18,500</td><td>6</td><td>18 Sep 2026</td><td><span class="tag success">Recurring</span></td></tr>
+            <tr><td>Priya Nair</td><td>priya@example.com</td><td>₹12,000</td><td>4</td><td>18 Sep 2026</td><td><span class="tag success">Active</span></td></tr>
+            <tr><td>Vikram Shah</td><td>vikram@example.com</td><td>₹45,000</td><td>3</td><td>17 Sep 2026</td><td><span class="tag success">Active</span></td></tr>
+            <tr><td>Sneha Kulkarni</td><td>sneha@example.com</td><td>₹6,500</td><td>5</td><td>17 Sep 2026</td><td><span class="tag success">Recurring</span></td></tr>
+            <tr><td>Amit Reddy</td><td>amit@example.com</td><td>₹1,500</td><td>1</td><td>17 Sep 2026</td><td><span class="tag failed">Payment failed</span></td></tr>
+          </tbody>
+        </table>
+        <h3 class="wire" style="margin-top:32px;">Donor Profile — Rahul Mehta</h3>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="label">Total given</div><div class="value">₹18,500</div></div>
+          <div class="stat-card"><div class="label">First donation</div><div class="value">Mar 2024</div></div>
+          <div class="stat-card"><div class="label">Recurring</div><div class="value">₹1,000/mo</div></div>
+          <div class="stat-card"><div class="label">Communication log</div><div class="value">14 emails</div></div>
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>Date</th><th>Cause</th><th>Amount</th><th>Receipt</th></tr></thead>
+          <tbody>
+            <tr><td>12 Sep 2026</td><td>Adolescent Health</td><td>₹2,500</td><td><a onclick="toast('Downloading receipt…')">Download</a></td></tr>
+            <tr><td>12 Aug 2026</td><td>Wherever Needed</td><td>₹1,000</td><td><a onclick="toast('Downloading receipt…')">Download</a></td></tr>
+            <tr><td>02 Jun 2026</td><td>Girls' Education</td><td>₹5,000</td><td><a onclick="toast('Downloading receipt…')">Download</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- SUBSCRIPTIONS -->
+      <div class="admin-view" data-view="subscriptions">
+        <div class="admin-header"><h2>Recurring Subscriptions</h2></div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="label">Active subscriptions</div><div class="value">612</div></div>
+          <div class="stat-card"><div class="label">Monthly value</div><div class="value">₹6,42,000</div></div>
+          <div class="stat-card"><div class="label">Paused</div><div class="value">18</div></div>
+          <div class="stat-card"><div class="label">Cancelled this month</div><div class="value">7</div></div>
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>Donor</th><th>Amount</th><th>Cause</th><th>Since</th><th>Next charge</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td>Rahul Mehta</td><td>₹1,000</td><td>Wherever Needed</td><td>Aug 2026</td><td>12 Oct 2026</td><td><span class="tag success">Active</span></td><td><a onclick="toast('Subscription pause confirmed.')">Pause</a></td></tr>
+            <tr><td>Sneha Kulkarni</td><td>₹500</td><td>Skill Training</td><td>Jan 2026</td><td>15 Oct 2026</td><td><span class="tag success">Active</span></td><td><a onclick="toast('Subscription pause confirmed.')">Pause</a></td></tr>
+            <tr><td>Amit Reddy</td><td>₹1,500</td><td>Girls' Education</td><td>Mar 2026</td><td>—</td><td><span class="tag failed">Failed</span></td><td><a onclick="toast('Retry link sent to donor.')">Retry</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- REPORTS -->
+      <div class="admin-view" data-view="reports">
+        <div class="admin-header"><h2>Reports &amp; Analytics</h2></div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="label">This financial year</div><div class="value">₹94,20,000</div></div>
+          <div class="stat-card"><div class="label">First-time donors</div><div class="value">1,842</div></div>
+          <div class="stat-card"><div class="label">Repeat donors</div><div class="value">1,342</div></div>
+          <div class="stat-card"><div class="label">Retention rate</div><div class="value">68%</div></div>
+        </div>
+        <div class="stat-card" style="background:var(--white);border:1px solid var(--border);margin-bottom:16px;">
+          <h3 class="wire">Fund utilisation by cause</h3>
+          <div style="font-size:13.5px;line-height:2.2;margin-top:12px;">
+            <div>Girls' Education <strong style="float:right;">₹42,40,000 (45%)</strong></div>
+            <div>Adolescent Health <strong style="float:right;">₹23,60,000 (25%)</strong></div>
+            <div>Skill &amp; Livelihood <strong style="float:right;">₹18,80,000 (20%)</strong></div>
+            <div>Marriage Prevention <strong style="float:right;">₹9,40,000 (10%)</strong></div>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="toast('Downloading annual report PDF…')">Download Annual Report →</button>
+      </div>
+
+      <!-- CAUSES -->
+      <div class="admin-view" data-view="causes">
+        <div class="admin-header">
+          <h2>Causes / Programmes</h2>
+          <button class="btn-primary" onclick="toast('New cause form opens here.')">+ Add Cause</button>
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>Cause</th><th>Goal</th><th>Raised</th><th>Active</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td>Girls' Education</td><td>₹15,00,000</td><td>₹9,30,000</td><td><span class="tag success">Live</span></td><td><a onclick="toast('Edit form opens here.')">Edit</a> · <a onclick="toast('Cause hidden from public site.')">Hide</a></td></tr>
+            <tr><td>Adolescent Health</td><td>₹8,00,000</td><td>₹5,20,000</td><td><span class="tag success">Live</span></td><td><a onclick="toast('Edit form opens here.')">Edit</a> · <a onclick="toast('Cause hidden from public site.')">Hide</a></td></tr>
+            <tr><td>Skill &amp; Livelihood</td><td>₹10,00,000</td><td>₹6,80,000</td><td><span class="tag success">Live</span></td><td><a onclick="toast('Edit form opens here.')">Edit</a> · <a onclick="toast('Cause hidden from public site.')">Hide</a></td></tr>
+            <tr><td>Child Marriage Prevention</td><td>₹5,00,000</td><td>₹2,20,000</td><td><span class="tag success">Live</span></td><td><a onclick="toast('Edit form opens here.')">Edit</a> · <a onclick="toast('Cause hidden from public site.')">Hide</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- BLOG -->
+      <div class="admin-view" data-view="blog">
+        <div class="admin-header">
+          <h2>Stories / Blog</h2>
+          <button class="btn-primary" onclick="toast('New story editor opens here.')">+ New Story</button>
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>Title</th><th>Category</th><th>Published</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td>How 340 villages built vigilance committees</td><td>Field Notes</td><td>12 Mar 2026</td><td><span class="tag success">Live</span></td><td><a onclick="toast('Edit opens.')">Edit</a></td></tr>
+            <tr><td>Sunita's story — first girl to finish Class 10</td><td>Beneficiary</td><td>28 Feb 2026</td><td><span class="tag success">Live</span></td><td><a onclick="toast('Edit opens.')">Edit</a></td></tr>
+            <tr><td>Annual Report 2025–26</td><td>Transparency</td><td>15 Jan 2026</td><td><span class="tag success">Live</span></td><td><a onclick="toast('Edit opens.')">Edit</a></td></tr>
+            <tr><td>Why we measure confidence, not just marks</td><td>Programme Design</td><td>—</td><td><span class="tag pending">Draft</span></td><td><a onclick="toast('Edit opens.')">Edit</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- GALLERY -->
+      <div class="admin-view" data-view="gallery">
+        <div class="admin-header">
+          <h2>Gallery</h2>
+          <button class="btn-primary" onclick="toast('Bulk upload opens here.')">+ Bulk Upload</button>
+        </div>
+        <div class="gallery-grid">
+          <div class="gallery-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><div class="caption">Health camp · Barmer</div></div>
+          <div class="gallery-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><div class="caption">School kits · Jaipur</div></div>
+          <div class="gallery-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><div class="caption">Skill centre · Ajmer</div></div>
+          <div class="gallery-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><div class="caption">Committee training</div></div>
+        </div>
+      </div>
+
+      <!-- EVENTS -->
+      <div class="admin-view" data-view="events">
+        <div class="admin-header">
+          <h2>Events</h2>
+          <button class="btn-primary" onclick="toast('New event form opens here.')">+ New Event</button>
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>Event</th><th>Date</th><th>Location</th><th>RSVPs</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td>Free Health Camp</td><td>12 Oct 2026</td><td>Barmer</td><td>184</td><td><span class="tag success">Upcoming</span></td><td><a onclick="toast('Edit opens.')">Edit</a></td></tr>
+            <tr><td>Skill Centre Graduation</td><td>26 Oct 2026</td><td>Ajmer</td><td>96</td><td><span class="tag success">Upcoming</span></td><td><a onclick="toast('Edit opens.')">Edit</a></td></tr>
+            <tr><td>Annual Fundraiser Gala</td><td>08 Nov 2026</td><td>Delhi</td><td>210</td><td><span class="tag success">Upcoming</span></td><td><a onclick="toast('Edit opens.')">Edit</a></td></tr>
+            <tr><td>Independence Day Kits</td><td>14 Aug 2026</td><td>Multiple</td><td>—</td><td><span class="tag pending">Completed</span></td><td><a onclick="toast('Edit opens.')">Edit</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- DOCUMENTS -->
+      <div class="admin-view" data-view="documents">
+        <div class="admin-header">
+          <h2>Documents Library</h2>
+          <button class="btn-primary" onclick="toast('Upload dialog opens here.')">+ Upload Document</button>
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>Document</th><th>Year</th><th>Uploaded</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td>80G Certificate</td><td>2024</td><td>12 Jan 2024</td><td><a onclick="toast('Download starting…')">Download</a> · <a onclick="toast('Replace dialog opens.')">Replace</a></td></tr>
+            <tr><td>12A Certificate</td><td>2024</td><td>12 Jan 2024</td><td><a onclick="toast('Download starting…')">Download</a> · <a onclick="toast('Replace dialog opens.')">Replace</a></td></tr>
+            <tr><td>Trust Deed</td><td>2017</td><td>02 Apr 2017</td><td><a onclick="toast('Download starting…')">Download</a></td></tr>
+            <tr><td>Annual Report</td><td>2025–26</td><td>15 Jan 2026</td><td><a onclick="toast('Download starting…')">Download</a> · <a onclick="toast('Replace dialog opens.')">Replace</a></td></tr>
+            <tr><td>Audited Financials</td><td>2025–26</td><td>15 Jan 2026</td><td><a onclick="toast('Download starting…')">Download</a> · <a onclick="toast('Replace dialog opens.')">Replace</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- VOLUNTEERS -->
+      <div class="admin-view" data-view="volunteers">
+        <div class="admin-header">
+          <h2>Volunteers</h2>
+          <div style="font-size:13.5px;color:var(--muted);">42 applications this month</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+          <button class="amount-pill selected" onclick="selectPill(this)">All</button>
+          <button class="amount-pill" onclick="selectPill(this)">New</button>
+          <button class="amount-pill" onclick="selectPill(this)">Contacted</button>
+          <button class="amount-pill" onclick="selectPill(this)">Onboarded</button>
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>Name</th><th>City</th><th>Interest</th><th>Availability</th><th>Applied</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td>Neha Kapoor</td><td>Delhi</td><td>Teaching</td><td>Weekends</td><td>18 Sep 2026</td><td><span class="tag rose">New</span></td><td><a onclick="toast('Marked as contacted.')">Contact</a></td></tr>
+            <tr><td>Arjun Singh</td><td>Mumbai</td><td>Design / content</td><td>Remote</td><td>17 Sep 2026</td><td><span class="tag rose">New</span></td><td><a onclick="toast('Marked as contacted.')">Contact</a></td></tr>
+            <tr><td>Dr. Meera Joshi</td><td>Jaipur</td><td>Health camp</td><td>Weekends</td><td>15 Sep 2026</td><td><span class="tag success">Onboarded</span></td><td>—</td></tr>
+            <tr><td>Karan Verma</td><td>Bangalore</td><td>Counselling</td><td>Weekday evenings</td><td>12 Sep 2026</td><td><span class="tag pending">Contacted</span></td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ENQUIRIES -->
+      <div class="admin-view" data-view="enquiries">
+        <div class="admin-header">
+          <h2>Enquiries Inbox</h2>
+          <div style="font-size:13.5px;color:var(--muted);">5 new · 12 this week</div>
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>From</th><th>Type</th><th>Message preview</th><th>Received</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td>Acme Industries CSR</td><td><span class="tag rose">CSR</span></td><td>We'd like to fund 500 girls in Rajasthan next quarter…</td><td>18 Sep 2026</td><td><span class="tag pending">New</span></td><td><a onclick="toast('Reply composer opens.')">Reply</a></td></tr>
+            <tr><td>Sarah Khan</td><td><span class="tag pending">General</span></td><td>I want to volunteer as a counsellor on weekends…</td><td>17 Sep 2026</td><td><span class="tag pending">New</span></td><td><a onclick="toast('Reply composer opens.')">Reply</a></td></tr>
+            <tr><td>Rajesh Kumar</td><td><span class="tag pending">General</span></td><td>How can I get a duplicate receipt for 2024?</td><td>15 Sep 2026</td><td><span class="tag success">Replied</span></td><td>—</td></tr>
+            <tr><td>TechCorp CSR</td><td><span class="tag rose">CSR</span></td><td>Requesting your latest audited financials…</td><td>12 Sep 2026</td><td><span class="tag success">Replied</span></td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="admin-view" data-view="settings">
+        <div class="admin-header"><h2>Settings</h2></div>
+        <div class="stat-card" style="background:var(--white);border:1px solid var(--border);margin-bottom:16px;">
+          <h3 class="wire">Organisation Details</h3>
+          <div class="form-row"><label>PAN</label><input type="text" value="ABCDE1234F"></div>
+          <div class="form-row"><label>80G Registration</label><input type="text" value="80G/2024/XXXX"></div>
+          <div class="form-row"><label>12A Registration</label><input type="text" value="12A/2024/XXXX"></div>
+          <div class="form-row"><label>Trust Registration</label><input type="text" value="IV-1234/2020"></div>
+          <button class="btn-primary" onclick="toast('Settings saved.')">Save Changes</button>
+        </div>
+        <div class="stat-card" style="background:var(--white);border:1px solid var(--border);margin-bottom:16px;">
+          <h3 class="wire">Payment Gateway</h3>
+          <div class="form-row"><label>Razorpay Key ID</label><input type="text" value="rzp_live_••••••••••••"></div>
+          <div class="form-row"><label>Razorpay Secret</label><input type="text" value="••••••••••••••••"></div>
+        </div>
+        <div class="stat-card" style="background:var(--white);border:1px solid var(--border);">
+          <h3 class="wire">User Management</h3>
+          <p class="sub" style="margin-bottom:14px;">Add and remove admin staff, assign roles, reset passwords, view activity log.</p>
+          <table class="admin-table">
+            <thead><tr><th>User</th><th>Role</th><th>Last active</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>Anjali Sharma</td><td>Super Admin</td><td>2 min ago</td><td><a onclick="toast('Edit user opens.')">Edit</a></td></tr>
+              <tr><td>Rakesh Verma</td><td>Content Manager</td><td>1 hr ago</td><td><a onclick="toast('Edit user opens.')">Edit</a></td></tr>
+              <tr><td>Devendra Singh</td><td>Finance Manager</td><td>3 hrs ago</td><td><a onclick="toast('Edit user opens.')">Edit</a></td></tr>
+              <tr><td>Priya Nair</td><td>Volunteer Coordinator</td><td>Yesterday</td><td><a onclick="toast('Edit user opens.')">Edit</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- EMAILS                                                            -->
+<!-- ================================================================ -->
+<div id="emails" class="screen">
+  <div class="page-body">
+    <div class="section">
+      <div class="section-title">Automated Emails</div>
+      <h1 class="wire">Every email the donor receives — sent without a human touching it.</h1>
+      <p class="sub">Triggered automatically by backend events. The team can edit the wording of each from the admin panel.</p>
+
+      <div style="display:grid;gap:16px;margin-top:20px;">
+        <div class="stat-card" style="background:var(--white);border:1px solid var(--border);">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+            <div><strong>1. Payment successful</strong><div style="font-size:12.5px;color:var(--muted);margin-top:2px;">Instant when Razorpay webhook fires</div></div>
+            <span class="tag success">Instant</span>
+          </div>
+          <div style="margin-top:14px;font-size:14px;color:#37474f;background:var(--green-pale);padding:16px;border-radius:10px;">
+            <strong>Subject:</strong> Thank you, [Name] — your receipt is attached<br><br>
+            Dear [Name],<br><br>
+            Your donation of ₹[Amount] to [Cause] reached us today. Because of you, [impact line].<br><br>
+            Attached: your 80G tax receipt and a certificate of appreciation.<br><br>
+            With gratitude,<br>Team Chah Foundation<br><br>
+            📎 80G-Receipt.pdf · 📎 Certificate.pdf
+          </div>
+        </div>
+
+        <div class="stat-card" style="background:var(--white);border:1px solid var(--border);">
+          <strong>2. Recurring payment charged</strong>
+          <div style="margin-top:14px;font-size:14px;color:#37474f;background:var(--green-pale);padding:16px;border-radius:10px;">
+            <strong>Subject:</strong> Your monthly donation of ₹[Amount] — receipt inside<br><br>
+            Your recurring contribution has been received for [Month]. The 80G receipt for this instalment is attached.<br><br>
+            📎 80G-Receipt-[Month].pdf
+          </div>
+        </div>
+
+        <div class="stat-card" style="background:var(--white);border:1px solid var(--border);">
+          <strong>3. Payment failed</strong>
+          <div style="margin-top:14px;font-size:14px;color:#37474f;background:var(--danger-pale);padding:16px;border-radius:10px;">
+            <strong>Subject:</strong> Your payment didn't go through — retry here<br><br>
+            Something went wrong with your payment. No amount has been charged. You can retry securely using the link below.<br><br>
+            <button class="btn-primary" style="font-size:13px;padding:9px 18px;" onclick="toast('Retry flow would open here.')">Retry Payment →</button>
+          </div>
+        </div>
+
+        <div class="stat-card" style="background:var(--white);border:1px solid var(--border);">
+          <strong>4. Volunteer form submitted</strong>
+          <div style="font-size:12.5px;color:var(--muted);margin-top:2px;">Acknowledgement to volunteer; submission lands in admin Volunteers module</div>
+        </div>
+        <div class="stat-card" style="background:var(--white);border:1px solid var(--border);">
+          <strong>5. Contact / CSR enquiry</strong>
+          <div style="font-size:12.5px;color:var(--muted);margin-top:2px;">Acknowledgement to sender; internal notification to admin</div>
+        </div>
+        <div class="stat-card" style="background:var(--white);border:1px solid var(--border);">
+          <strong>6. Newsletter signup</strong>
+          <div style="font-size:12.5px;color:var(--muted);margin-top:2px;">Welcome email with consent confirmation</div>
+        </div>
+        <div class="stat-card" style="background:var(--white);border:1px solid var(--border);">
+          <strong>7. Annual consolidated 80G receipt</strong>
+          <div style="font-size:12.5px;color:var(--muted);margin-top:2px;">Sent March/April with one PDF covering all donations for the financial year</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- SITEMAP                                                           -->
+<!-- ================================================================ -->
+<div id="sitemap" class="screen">
+  <div class="page-body">
+    <div class="section">
+      <div class="section-title">Full Sitemap</div>
+      <h1 class="wire">Every screen in the platform</h1>
+      <p class="sub">Click any item to preview it in this prototype.</p>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:20px;">
+        <div class="stat-card" style="background:var(--white);border:1px solid var(--border);">
+          <h3 class="wire">Public Website</h3>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;font-size:14px;">
+            <a onclick="showScreen('public-home', document.querySelector('.nav-switch button'))">1. Home</a>
+            <a onclick="showScreen('public-about', document.querySelector('.nav-switch button'))">2. About Us</a>
+            <a onclick="showScreen('public-causes', document.querySelector('.nav-switch button'))">3. Our Work / Causes</a>
+            <a onclick="showScreen('public-cause-detail', document.querySelector('.nav-switch button'))">4. Cause Detail</a>
+            <a onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])">5. Donate</a>
+            <a onclick="showScreen('public-volunteer', document.querySelector('.nav-switch button'))">6. Volunteer</a>
+            <a onclick="showScreen('public-gallery', document.querySelector('.nav-switch button'))">7. Gallery</a>
+            <a onclick="showScreen('public-blog', document.querySelector('.nav-switch button'))">8. Stories / Blog</a>
+            <a onclick="showScreen('public-events', document.querySelector('.nav-switch button'))">9. Events</a>
+            <a onclick="showScreen('public-impact', document.querySelector('.nav-switch button'))">10. Impact / Reports</a>
+            <a onclick="showScreen('public-csr', document.querySelector('.nav-switch button'))">11. Corporate / CSR</a>
+            <a onclick="showScreen('public-contact', document.querySelector('.nav-switch button'))">12. Contact Us</a>
+            <a onclick="showScreen('donor-login', document.querySelector('.nav-switch button'))">13. Donor Login</a>
+            <a onclick="showScreen('legal', document.querySelector('.nav-switch button'))">14. Legal Pages</a>
+          </div>
+        </div>
+
+        <div class="stat-card" style="background:var(--white);border:1px solid var(--border);">
+          <h3 class="wire">Donation Flow</h3>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;font-size:14px;">
+            <a onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1]);goStep(1)">Step 1 — Type</a>
+            <a onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1]);goStep(2)">Step 2 — Cause</a>
+            <a onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1]);goStep(3)">Step 3 — Amount</a>
+            <a onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1]);goStep(4)">Step 4 — Donor details</a>
+            <a onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1]);goStep(5)">Step 5 — Razorpay</a>
+            <a onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1]);goStep(6)">Step 6 — Thank You</a>
+          </div>
+        </div>
+
+        <div class="stat-card" style="background:var(--white);border:1px solid var(--border);">
+          <h3 class="wire">Admin Panel</h3>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;font-size:14px;">
+            <a onclick="showScreen('admin-panel', document.querySelectorAll('.nav-switch button')[2]);showAdminByName('dashboard')">Dashboard</a>
+            <a onclick="showScreen('admin-panel', document.querySelectorAll('.nav-switch button')[2]);showAdminByName('donations')">Donations</a>
+            <a onclick="showScreen('admin-panel', document.querySelectorAll('.nav-switch button')[2]);showAdminByName('donors')">Donors</a>
+            <a onclick="showScreen('admin-panel', document.querySelectorAll('.nav-switch button')[2]);showAdminByName('subscriptions')">Subscriptions</a>
+            <a onclick="showScreen('admin-panel', document.querySelectorAll('.nav-switch button')[2]);showAdminByName('reports')">Reports</a>
+            <a onclick="showScreen('admin-panel', document.querySelectorAll('.nav-switch button')[2]);showAdminByName('causes')">Causes</a>
+            <a onclick="showScreen('admin-panel', document.querySelectorAll('.nav-switch button')[2]);showAdminByName('blog')">Stories / Blog</a>
+            <a onclick="showScreen('admin-panel', document.querySelectorAll('.nav-switch button')[2]);showAdminByName('gallery')">Gallery</a>
+            <a onclick="showScreen('admin-panel', document.querySelectorAll('.nav-switch button')[2]);showAdminByName('events')">Events</a>
+            <a onclick="showScreen('admin-panel', document.querySelectorAll('.nav-switch button')[2]);showAdminByName('documents')">Documents</a>
+            <a onclick="showScreen('admin-panel', document.querySelectorAll('.nav-switch button')[2]);showAdminByName('volunteers')">Volunteers</a>
+            <a onclick="showScreen('admin-panel', document.querySelectorAll('.nav-switch button')[2]);showAdminByName('enquiries')">Enquiries</a>
+            <a onclick="showScreen('admin-panel', document.querySelectorAll('.nav-switch button')[2]);showAdminByName('settings')">Settings</a>
+          </div>
+        </div>
+
+        <div class="stat-card" style="background:var(--white);border:1px solid var(--border);">
+          <h3 class="wire">Automation</h3>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;font-size:14px;">
+            <a onclick="showScreen('emails', document.querySelectorAll('.nav-switch button')[3])">Thank-you email</a>
+            <a onclick="showScreen('emails', document.querySelectorAll('.nav-switch button')[3])">80G receipt PDF</a>
+            <a onclick="showScreen('emails', document.querySelectorAll('.nav-switch button')[3])">Donation certificate</a>
+            <a onclick="showScreen('emails', document.querySelectorAll('.nav-switch button')[3])">Failed payment email</a>
+            <a onclick="showScreen('emails', document.querySelectorAll('.nav-switch button')[3])">Annual consolidated receipt</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile sticky -->
+<div class="mobile-cta">
+  <div class="amount-sel">₹1,000 · Wherever Needed</div>
+  <button class="btn-donate" onclick="showScreen('donate-flow', document.querySelectorAll('.nav-switch button')[1])">Donate Now</button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* Screen switching */
+function showScreen(id, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (btn && btn.classList) {
+    document.querySelectorAll('.nav-switch button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  history.replaceState(null, '', '#' + id);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* Pill selection */
+function selectPill(el) {
+  const parent = el.parentElement;
+  parent.querySelectorAll('.amount-pill, .radio-pill').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+/* Donation flow */
+let currentStep = 1;
+function goStep(n) {
+  currentStep = n;
+  document.querySelectorAll('#flowSteps .flow-step').forEach(s => {
+    const step = parseInt(s.dataset.step);
+    s.classList.toggle('active', step === n);
+    s.classList.toggle('done', step < n);
+  });
+  document.querySelectorAll('.step-panel').forEach(p => {
+    p.classList.toggle('active', parseInt(p.dataset.panel) === n);
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* Razorpay */
+function openRazorpay() { document.getElementById('razorpayModal').classList.add('show'); }
+function selectRp(el) {
+  document.querySelectorAll('.rp-method').forEach(m => m.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function completePayment() {
+  document.getElementById('razorpayModal').classList.remove('show');
+  goStep(6);
+  toast('Payment successful — receipt and certificate sent to your email.');
+}
+
+/* Admin */
+function showAdmin(view, el) {
+  document.querySelectorAll('.admin-view').forEach(v => v.classList.remove('active'));
+  const target = document.querySelector(`.admin-view[data-view="${view}"]`);
+  if (target) target.classList.add('active');
+  document.querySelectorAll('.admin-side .nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+function showAdminByName(view) {
+  const el = Array.from(document.querySelectorAll('.admin-side .nav-item')).find(n => {
+    const onclick = n.getAttribute('onclick') || '';
+    return onclick.includes("'" + view + "'");
+  });
+  showAdmin(view, el);
+}
+
+/* Wireframe */
+function toggleWire() {
+  document.body.classList.toggle('wire-mode');
+  document.getElementById('wireToggle').classList.toggle('on');
+}
+
+/* Toast */
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+/* Copy link */
+function copyLink() {
+  const hash = window.location.hash || '#public-home';
+  const url = window.location.origin + window.location.pathname + hash;
+  navigator.clipboard.writeText(url).then(() => toast('Link copied — share this exact screen.')).catch(() => toast('Copy failed — copy the URL manually.'));
+}
+
+/* Init from hash */
+(function initFromHash() {
+  const hash = window.location.hash.replace('#', '');
+  if (hash && document.getElementById(hash)) {
+    const screens = ['public-home','donate-flow','admin-panel','emails','sitemap'];
+    const btn = screens.includes(hash)
+      ? document.querySelectorAll('.nav-switch button')[screens.indexOf(hash)]
+      : document.querySelector('.nav-switch button');
+    showScreen(hash, btn);
+  }
+})();
+</script>
+</body>
+</html>
