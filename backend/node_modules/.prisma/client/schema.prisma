@@ -1,0 +1,575 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Authentication Domain
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model User {
+  id            BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  first_name    String
+  last_name     String
+  email         String     @unique
+  password_hash String
+  status        UserStatus @default(ACTIVE)
+  role_id       BigInt     @db.UnsignedBigInt
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+
+  role          Role           @relation(fields: [role_id], references: [id], onDelete: Restrict)
+  notifications Notification[]
+  blogs         Blog[]
+  audit_logs    AuditLog[]
+
+  @@map("users")
+}
+
+model Role {
+  id          BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  name        String  @unique
+  description String?
+
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id       BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  action   String
+  resource String
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  role_id       BigInt @db.UnsignedBigInt
+  permission_id BigInt @db.UnsignedBigInt
+
+  role       Role       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+
+  @@id([role_id, permission_id])
+  @@map("role_permissions")
+}
+
+// Donor Domain
+
+enum DonorStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Donor {
+  id         BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  first_name String
+  last_name  String?
+  email      String      @unique
+  phone      String?
+  pan_number String?
+  address    String?
+  city       String?
+  state      String?
+  country    String?
+  pincode    String?
+  status     DonorStatus @default(ACTIVE)
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
+
+  donations Donation[]
+
+  @@index([email])
+  @@index([phone])
+  @@map("donors")
+}
+
+// Donation Domain
+
+enum PaymentType {
+  ONLINE
+  CASH
+  CHEQUE
+  BANK_TRANSFER
+  OTHER
+}
+
+enum DonationStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+model Donation {
+  id              BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  donation_number String         @unique
+  donor_id        BigInt         @db.UnsignedBigInt
+  campaign_id     BigInt?        @db.UnsignedBigInt
+  amount          Decimal        @db.Decimal(12, 2)
+  currency        String         @default("INR")
+  payment_type    PaymentType
+  status          DonationStatus @default(PENDING)
+  notes           String?
+  created_at      DateTime       @default(now())
+  updated_at      DateTime       @updatedAt
+
+  donor       Donor        @relation(fields: [donor_id], references: [id], onDelete: Restrict)
+  campaign    Campaign?    @relation(fields: [campaign_id], references: [id], onDelete: Restrict)
+  payments    Payment[]
+  certificate Certificate?
+
+  @@index([donation_number])
+  @@index([donor_id])
+  @@index([campaign_id])
+  @@map("donations")
+}
+
+// Payment Domain
+
+enum PaymentProvider {
+  RAZORPAY
+  MANUAL
+}
+
+enum PaymentStatus {
+  CREATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+}
+
+model Payment {
+  id                  BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  donation_id         BigInt          @db.UnsignedBigInt
+  amount              Decimal         @db.Decimal(12, 2)
+  provider            PaymentProvider
+  provider_order_id   String?
+  provider_payment_id String?         @unique
+  status              PaymentStatus   @default(CREATED)
+  method              String?
+  error_message       String?
+  created_at          DateTime        @default(now())
+  updated_at          DateTime        @updatedAt
+
+  donation Donation @relation(fields: [donation_id], references: [id], onDelete: Restrict)
+  refunds  Refund[]
+
+  @@index([provider_payment_id])
+  @@index([donation_id])
+  @@map("payments")
+}
+
+enum WebhookProcessingState {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+model PaymentWebhookEvent {
+  id                BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
+  provider          String                 @default("RAZORPAY")
+  provider_event_id String                 @unique
+  event_type        String
+  payload           Json
+  signature_valid   Boolean
+  processing_state  WebhookProcessingState @default(PENDING)
+  error_message     String?
+  received_at       DateTime
+  processed_at      DateTime?
+
+  @@index([provider_event_id])
+  @@map("payment_webhook_events")
+}
+
+// Refund Domain
+
+enum RefundStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+model Refund {
+  id                 BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  payment_id         BigInt       @db.UnsignedBigInt
+  amount             Decimal      @db.Decimal(12, 2)
+  provider_refund_id String?      @unique
+  reason             String?
+  status             RefundStatus
+  created_at         DateTime     @default(now())
+  updated_at         DateTime     @updatedAt
+
+  payment Payment @relation(fields: [payment_id], references: [id], onDelete: Restrict)
+
+  @@index([payment_id])
+  @@map("refunds")
+}
+
+// Certificate Domain
+
+enum CertificateStatus {
+  GENERATING
+  GENERATED
+  FAILED
+}
+
+model Certificate {
+  id                 BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  donation_id        BigInt            @unique @db.UnsignedBigInt
+  certificate_number String            @unique
+  pdf_url            String?
+  status             CertificateStatus
+  generated_at       DateTime?
+  created_at         DateTime          @default(now())
+  updated_at         DateTime          @updatedAt
+
+  donation Donation @relation(fields: [donation_id], references: [id], onDelete: Restrict)
+
+  @@index([certificate_number])
+  @@map("certificates")
+}
+
+// Email Domain
+
+enum DeliveryStatus {
+  PENDING
+  DELIVERED
+  FAILED
+}
+
+model EmailLog {
+  id                  BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  recipient_email     String
+  provider            String         @default("MSG91")
+  template_id         String
+  provider_message_id String?
+  delivery_status     DeliveryStatus
+  failure_reason      String?
+  related_entity_type String?
+  related_entity_id   BigInt?        @db.UnsignedBigInt
+  sent_at             DateTime?
+  created_at          DateTime       @default(now())
+  updated_at          DateTime       @updatedAt
+
+  @@index([recipient_email])
+  @@index([related_entity_type, related_entity_id])
+  @@map("email_logs")
+}
+
+// Campaign Domain
+
+model CampaignCategory {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  name        String
+  slug        String   @unique
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  campaigns Campaign[]
+
+  @@map("campaign_categories")
+}
+
+enum CampaignStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model Campaign {
+  id                BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  category_id       BigInt         @db.UnsignedBigInt
+  title             String
+  slug              String         @unique
+  target_amount     Decimal?       @db.Decimal(12, 2)
+  raised_amount     Decimal        @default(0) @db.Decimal(12, 2)
+  status            CampaignStatus
+  start_date        DateTime?
+  end_date          DateTime?
+  content           String         @db.LongText
+  featured_image_id BigInt?        @db.UnsignedBigInt
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
+
+  category       CampaignCategory @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  featured_image Media?           @relation(fields: [featured_image_id], references: [id], onDelete: SetNull)
+  donations      Donation[]
+
+  @@index([slug])
+  @@index([category_id])
+  @@map("campaigns")
+}
+
+// CMS Domain
+
+model BlogCategory {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  name       String
+  slug       String   @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  blogs Blog[]
+
+  @@map("blog_categories")
+}
+
+model Tag {
+  id   BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  name String
+  slug String @unique
+
+  blog_tags BlogTag[]
+
+  @@map("tags")
+}
+
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Blog {
+  id                BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  category_id       BigInt     @db.UnsignedBigInt
+  author_id         BigInt     @db.UnsignedBigInt
+  title             String
+  slug              String     @unique
+  excerpt           String?
+  content           String     @db.LongText
+  featured_image_id BigInt?    @db.UnsignedBigInt
+  status            BlogStatus
+  published_at      DateTime?
+  created_at        DateTime   @default(now())
+  updated_at        DateTime   @updatedAt
+
+  category       BlogCategory @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  author         User         @relation(fields: [author_id], references: [id], onDelete: Restrict)
+  featured_image Media?       @relation(fields: [featured_image_id], references: [id], onDelete: SetNull)
+  blog_tags      BlogTag[]
+
+  @@index([slug])
+  @@index([category_id])
+  @@index([author_id])
+  @@index([status, published_at])
+  @@map("blogs")
+}
+
+model BlogTag {
+  blog_id BigInt @db.UnsignedBigInt
+  tag_id  BigInt @db.UnsignedBigInt
+
+  blog Blog @relation(fields: [blog_id], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([blog_id, tag_id])
+  @@map("blog_tags")
+}
+
+// NGO Content Domain
+
+model Project {
+  id                BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  title             String
+  slug              String    @unique
+  description       String?   @db.LongText
+  status            String
+  start_date        DateTime?
+  end_date          DateTime?
+  featured_image_id BigInt?   @db.UnsignedBigInt
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  featured_image Media?     @relation(fields: [featured_image_id], references: [id], onDelete: SetNull)
+  activities     Activity[]
+
+  @@map("projects")
+}
+
+model Activity {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  project_id  BigInt    @db.UnsignedBigInt
+  title       String
+  date        DateTime?
+  description String?   @db.LongText
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@index([project_id])
+  @@map("activities")
+}
+
+model ImpactMetric {
+  id           BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  metric_name  String
+  metric_value String
+  icon         String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("impact_metrics")
+}
+
+model Testimonial {
+  id              BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  author_name     String
+  author_role     String?
+  content         String   @db.Text
+  avatar_image_id BigInt?  @db.UnsignedBigInt
+  is_published    Boolean  @default(false)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  avatar_image Media? @relation(fields: [avatar_image_id], references: [id], onDelete: SetNull)
+
+  @@map("testimonials")
+}
+
+model Faq {
+  id           BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  question     String
+  answer       String   @db.Text
+  category     String?
+  is_published Boolean  @default(false)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("faqs")
+}
+
+// Media Domain
+
+model Album {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  name        String
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  media Media[]
+
+  @@map("albums")
+}
+
+model Media {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  album_id   BigInt?  @db.UnsignedBigInt
+  filename   String
+  url        String
+  mime_type  String
+  file_size  Int
+  width      Int?
+  height     Int?
+  alt_text   String?
+  caption    String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  album        Album?        @relation(fields: [album_id], references: [id], onDelete: SetNull)
+  campaigns    Campaign[]
+  blogs        Blog[]
+  projects     Project[]
+  testimonials Testimonial[]
+
+  @@index([album_id])
+  @@map("media")
+}
+
+// Operations Domain
+
+enum ContactStatus {
+  UNREAD
+  READ
+  RESOLVED
+}
+
+model ContactEnquiry {
+  id         BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  name       String
+  email      String
+  phone      String?
+  subject    String?
+  message    String        @db.Text
+  status     ContactStatus @default(UNREAD)
+  created_at DateTime      @default(now())
+  updated_at DateTime      @updatedAt
+
+  @@map("contact_enquiries")
+}
+
+enum SubscriberStatus {
+  SUBSCRIBED
+  UNSUBSCRIBED
+}
+
+model NewsletterSubscriber {
+  id         BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  email      String           @unique
+  status     SubscriberStatus @default(SUBSCRIBED)
+  created_at DateTime         @default(now())
+  updated_at DateTime         @updatedAt
+
+  @@map("newsletter_subscribers")
+}
+
+model Notification {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    BigInt   @db.UnsignedBigInt
+  type       String
+  title      String
+  message    String   @db.Text
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id     BigInt?  @db.UnsignedBigInt
+  action      String
+  entity_type String
+  entity_id   BigInt   @db.UnsignedBigInt
+  old_values  Json?
+  new_values  Json?
+  ip_address  String?
+  user_agent  String?
+  created_at  DateTime @default(now())
+
+  user User? @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([entity_type, entity_id])
+  @@index([user_id])
+  @@map("audit_logs")
+}
+
+model Setting {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  setting_key   String   @unique
+  setting_value String   @db.Text
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@map("settings")
+}
