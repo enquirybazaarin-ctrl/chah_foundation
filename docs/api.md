@@ -12,7 +12,11 @@
 
 ## Modules / Endpoints
 *(Proposed based on domains)*
-- Authentication
+- **Authentication**
+  - `POST /api/v1/auth/login`: Accepts `{ email, password }`. Sets `HttpOnly` auth cookie on success (does not return JWT in JSON).
+  - `GET /api/v1/auth/me`: Returns authenticated user information and permissions.
+  - `POST /api/v1/auth/logout`: Clears authentication cookie.
+  - *Returns 401 for missing/invalid auth; 403 for missing permissions.*
 - Users/Roles
 - Donations & Payments
 - Certificates

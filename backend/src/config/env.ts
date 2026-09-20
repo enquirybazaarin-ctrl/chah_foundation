@@ -11,6 +11,9 @@ const baseSchema = z.object({
   PORT: z.string().default('5000'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   FRONTEND_URL: z.string().optional(),
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters long for production safety'),
+  JWT_EXPIRES_IN: z.string().default('2h'),
+  ADMIN_CORS_ORIGIN: z.string().min(1, 'ADMIN_CORS_ORIGIN is required for secure authentication requests'),
 });
 
 const envSchema = baseSchema.refine(

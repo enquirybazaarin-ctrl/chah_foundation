@@ -20,7 +20,12 @@
 - REST API (Express Backend serving the Next.js applications).
 
 ## 5. Authentication Boundary
-- Authentication, authorization, and RBAC are implemented. Secrets must remain server-side and never be exposed to frontend code.
+- **Method**: JWT-based authentication stored exclusively in an `HttpOnly` cookie.
+- **Cookie Security**: `Secure` cookie in production, `SameSite=Lax` to support subdomain-based production topology. (A production cookie Domain value is not hard-coded yet; localhost dev must remain possible without weakening prod security).
+- **Verification**: The backend verifies JWT signature, JWT expiration, User existence, User status (`ACTIVE`), and required permissions. 
+- **Topology**: Designed to support a subdomain architecture (e.g., `www.chahfoundation.com`, `admin.chahfoundation.com`, `api.chahfoundation.com`).
+- **State**: Short-lived JWT (2 hours initially) with no refresh-token mechanism, `refresh_tokens` table, `sessions` table, Redis, or BullMQ in Phase 1.
+- Secrets must remain server-side and never be exposed to frontend code.
 
 ## 6. Database Boundary
 - **Database**: MySQL via Prisma.
