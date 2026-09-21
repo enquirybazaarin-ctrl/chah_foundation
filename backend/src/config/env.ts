@@ -14,6 +14,9 @@ const baseSchema = z.object({
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters long for production safety'),
   JWT_EXPIRES_IN: z.string().default('2h'),
   ADMIN_CORS_ORIGIN: z.string().min(1, 'ADMIN_CORS_ORIGIN is required for secure authentication requests'),
+  RAZORPAY_KEY_ID: z.string().min(1, 'RAZORPAY_KEY_ID is required'),
+  RAZORPAY_KEY_SECRET: z.string().min(1, 'RAZORPAY_KEY_SECRET is required'),
+  RAZORPAY_WEBHOOK_SECRET: z.string().min(1, 'RAZORPAY_WEBHOOK_SECRET is required'),
 });
 
 const envSchema = baseSchema.refine(

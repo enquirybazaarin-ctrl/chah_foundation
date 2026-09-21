@@ -120,6 +120,7 @@ enum DonationStatus {
 model Donation {
   id              BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
   donation_number String         @unique
+  idempotency_key String?        @unique
   donor_id        BigInt         @db.UnsignedBigInt
   campaign_id     BigInt?        @db.UnsignedBigInt
   created_by_id   BigInt?        @db.UnsignedBigInt
