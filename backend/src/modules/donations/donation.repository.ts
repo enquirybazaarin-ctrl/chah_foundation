@@ -26,6 +26,36 @@ export class DonationRepository {
     });
   }
 
+  public async findPaymentByProviderOrderId(providerOrderId: string) {
+    return prisma.payment.findFirst({
+      where: { provider_order_id: providerOrderId },
+      include: {
+        donation: {
+          include: {
+            donor: true,
+            campaign: true,
+            payments: true
+          }
+        }
+      }
+    });
+  }
+
+  public async findPaymentById(id: bigint) {
+    return prisma.payment.findUnique({
+      where: { id },
+      include: {
+        donation: {
+          include: {
+            donor: true,
+            campaign: true,
+            payments: true
+          }
+        }
+      }
+    });
+  }
+
   public async confirmDonation(tx: PrismaClientOrTransaction, id: bigint) {
     // Atomic state transition: Ensure it is PENDING
     const result = await tx.$executeRaw`

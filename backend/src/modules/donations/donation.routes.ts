@@ -6,6 +6,7 @@ import { donationValidation } from './donation.validation';
 import {
   createOfflineDonation,
   createOnlineDonation,
+  verifyOnlineDonation,
   getDonations,
   getDonationById,
   confirmDonation,
@@ -19,7 +20,7 @@ const router = Router();
 const isTest = process.env.NODE_ENV === 'test';
 
 // Public Rate Limiter for Online Donations
-const publicDonationRateLimiter = rateLimit({
+const publicOnlineDonationRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: isTest ? 100 : 5, // Limit each IP to 5 public creations per windowMs
   message: {
@@ -30,12 +31,32 @@ const publicDonationRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Public Rate Limiter for Online Verification
+const publicVerifyDonationRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: isTest ? 100 : 5, // Limit each IP to 5 public verifications per windowMs
+  message: {
+    status: 'error',
+    message: 'Too many verification attempts from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Online Donation Creation (Public)
 router.post(
   '/online',
-  publicDonationRateLimiter,
+  publicOnlineDonationRateLimiter,
   validateRequest(donationValidation.createOnline),
   createOnlineDonation
+);
+
+// Online Donation Verification (Public)
+router.post(
+  '/verify',
+  publicVerifyDonationRateLimiter,
+  validateRequest(donationValidation.verifyOnline),
+  verifyOnlineDonation
 );
 
 // All other donation routes require authentication

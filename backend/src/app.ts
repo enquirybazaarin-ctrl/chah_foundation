@@ -21,6 +21,11 @@ app.use(cors({
   credentials: true 
 }));
 app.use(cookieParser());
+
+// Razorpay Webhook requires raw body buffer for HMAC verification before global express.json()
+import paymentRoutes from './modules/payments/payment.routes';
+app.use('/api/v1/payments', express.raw({ type: 'application/json' }), paymentRoutes);
+
 app.use(express.json({ limit: '10kb' }));
 app.use(morgan(env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 

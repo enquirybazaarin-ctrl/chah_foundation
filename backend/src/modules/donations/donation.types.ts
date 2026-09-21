@@ -47,3 +47,17 @@ export interface DonationSearchQuery {
   status?: DonationStatus;
   campaign_id?: bigint;
 }
+
+export interface VerifyOnlineDonationDTO {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+export interface ProcessSuccessfulPaymentParams {
+  paymentId: bigint;
+  providerPaymentId: string;
+  paymentMethod?: string;
+  auditContext: AuditContext;
+  webhookEventId?: bigint;
+}

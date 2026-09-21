@@ -44,6 +44,25 @@ export const createOnlineDonation = async (req: Request, res: Response, next: Ne
   }
 };
 
+export const verifyOnlineDonation = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const auditContext = {
+      actorUserId: (req as any).user?.id ? BigInt((req as any).user.id) : undefined,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
+    };
+
+    const donation = await donationService.verifyOnlineDonation(req.body, auditContext);
+
+    res.status(200).json({
+      status: 'success',
+      data: donation
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getDonations = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const query = req.query as any;
