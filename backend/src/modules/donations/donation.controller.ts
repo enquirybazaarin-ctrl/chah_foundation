@@ -20,6 +20,30 @@ export const createOfflineDonation = async (req: Request, res: Response, next: N
   }
 };
 
+export const createOnlineDonation = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const auditContext = {
+      actorUserId: (req as any).user?.id ? BigInt((req as any).user.id) : undefined,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
+    };
+
+    const payload = {
+      ...req.body,
+      idempotency_key: req.headers['idempotency-key']
+    };
+
+    const { donation, isNew } = await donationService.createOnlineDonation(payload, auditContext);
+
+    res.status(isNew ? 201 : 200).json({
+      status: 'success',
+      data: donation
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getDonations = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const query = req.query as any;

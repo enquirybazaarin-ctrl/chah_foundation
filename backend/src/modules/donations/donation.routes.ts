@@ -5,15 +5,40 @@ import { validateRequest } from '../../middleware/validate.middleware';
 import { donationValidation } from './donation.validation';
 import {
   createOfflineDonation,
+  createOnlineDonation,
   getDonations,
   getDonationById,
   confirmDonation,
   cancelDonation
 } from './donation.controller';
 
+import rateLimit from 'express-rate-limit';
+
 const router = Router();
 
-// All donation routes require authentication
+const isTest = process.env.NODE_ENV === 'test';
+
+// Public Rate Limiter for Online Donations
+const publicDonationRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: isTest ? 100 : 5, // Limit each IP to 5 public creations per windowMs
+  message: {
+    status: 'error',
+    message: 'Too many online donations from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Online Donation Creation (Public)
+router.post(
+  '/online',
+  publicDonationRateLimiter,
+  validateRequest(donationValidation.createOnline),
+  createOnlineDonation
+);
+
+// All other donation routes require authentication
 router.use(protect);
 
 // Offline Donation Creation

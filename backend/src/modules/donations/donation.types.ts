@@ -21,6 +21,15 @@ export interface DonorDTO {
   pincode?: string;
 }
 
+export interface CreateOnlineDonationDTO {
+  idempotency_key: string;
+  donor: DonorDTO;
+  amount: number;
+  campaign_id?: bigint;
+  is_anonymous?: boolean;
+  donor_message?: string;
+}
+
 export interface CreateOfflineDonationDTO {
   donor: DonorDTO;
   amount: number;

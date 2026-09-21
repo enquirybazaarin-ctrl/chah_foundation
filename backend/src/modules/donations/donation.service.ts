@@ -3,8 +3,9 @@ import { AppError } from '../../utils/errors';
 import { donorService } from '../donors/donor.service';
 import { NumberSequenceService } from '../../services/number-sequence/number-sequence.service';
 import { donationRepository } from './donation.repository';
-import { CreateOfflineDonationDTO, AuditContext, DonationSearchQuery } from './donation.types';
+import { CreateOfflineDonationDTO, CreateOnlineDonationDTO, AuditContext, DonationSearchQuery } from './donation.types';
 import { Prisma } from '@prisma/client';
+import { razorpayService } from '../payments/razorpay.service';
 
 export class DonationService {
   /**
@@ -93,6 +94,136 @@ export class DonationService {
 
       return this.mapDonationResponse(donation);
     });
+  }
+
+  /**
+   * Create Online Donation (Phase B)
+   */
+  public async createOnlineDonation(data: CreateOnlineDonationDTO, auditContext: AuditContext) {
+    // 1. Check idempotency
+    const existing = await prisma.donation.findUnique({
+      where: { idempotency_key: data.idempotency_key },
+      include: { payments: true, donor: true }
+    });
+
+    let donation;
+    let payment;
+    const requestedAmount = new Prisma.Decimal(data.amount);
+
+    if (existing) {
+      // 2. Validate payload matching
+      if (
+        !existing.amount.equals(requestedAmount) ||
+        existing.is_anonymous !== (data.is_anonymous || false) ||
+        (existing.campaign_id?.toString() || undefined) !== (data.campaign_id?.toString() || undefined) ||
+        existing.donor.first_name !== data.donor.first_name ||
+        (existing.donor.email || '') !== (data.donor.email || '') ||
+        (existing.donor.phone || '') !== (data.donor.phone || '')
+      ) {
+        throw new AppError('Idempotency key already used with materially different payload', 409);
+      }
+
+      donation = existing;
+      payment = existing.payments[0];
+
+      if (payment.provider_order_id) {
+        return {
+          donation: this.mapDonationResponse(donation),
+          isNew: false
+        };
+      }
+    } else {
+      // 3. Create Intent (Internal Transaction)
+      const intentResult = await prisma.$transaction(async (tx) => {
+        const { donor } = await donorService.resolveOrCreateWithTransaction(tx, data.donor as any, auditContext);
+        const donorId = BigInt(donor.id);
+        const year = new Date().getFullYear();
+        const donationNumber = await NumberSequenceService.next(tx, 'DONATION', year);
+
+        const newDonation = await donationRepository.createDonation(tx, {
+          donation_number: donationNumber,
+          idempotency_key: data.idempotency_key,
+          donor_id: donorId,
+          campaign_id: data.campaign_id ? BigInt(data.campaign_id) : null,
+          created_by_id: auditContext.actorUserId || null,
+          amount: requestedAmount,
+          payment_type: 'ONLINE',
+          status: 'PENDING',
+          is_anonymous: data.is_anonymous || false,
+          donor_message: data.donor_message
+        });
+
+        const newPayment = await donationRepository.createPayment(tx, {
+          donation_id: newDonation.id,
+          amount: requestedAmount,
+          provider: 'RAZORPAY',
+          status: 'CREATED'
+        });
+
+        await tx.auditLog.create({
+          data: {
+            action: 'DONATION_CREATED',
+            entity_type: 'DONATION',
+            entity_id: newDonation.id,
+            user_id: auditContext.actorUserId || null,
+            ip_address: auditContext.ipAddress,
+            user_agent: auditContext.userAgent,
+            new_values: {
+              donation_number: newDonation.donation_number,
+              idempotency_key: data.idempotency_key,
+              amount: newDonation.amount.toString()
+            } as any
+          }
+        });
+
+        (newDonation as any).payments = [newPayment];
+
+        return {
+          donation: newDonation,
+          payment: newPayment
+        };
+      });
+
+      donation = intentResult.donation!;
+      payment = intentResult.payment;
+    }
+
+    // 4. Razorpay Orchestration (Outside Transaction)
+    if (!payment.provider_order_id) {
+      const order = await razorpayService.createOrder({
+        amount: donation.amount,
+        currency: 'INR',
+        receipt: donation.donation_number
+      });
+
+      // 5. Compare-And-Set (CAS) to atomically persist provider_order_id
+      const updateResult = await prisma.payment.updateMany({
+        where: {
+          id: payment.id,
+          provider_order_id: null
+        },
+        data: {
+          provider_order_id: order.id,
+          updated_at: new Date()
+        }
+      });
+
+      if (updateResult.count === 0) {
+        // Another thread won the CAS
+        const updatedPayment = await prisma.payment.findUnique({ where: { id: payment.id } });
+        payment = updatedPayment!;
+        (donation as any).payments[0] = payment;
+      } else {
+        // We won the CAS
+        payment.provider_order_id = order.id;
+        (donation as any).payments[0] = payment;
+      }
+    }
+
+    return {
+      donation: this.mapDonationResponse(donation),
+      isNew: !existing
+    };
   }
 
   /**

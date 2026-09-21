@@ -2,6 +2,30 @@ import { z } from 'zod';
 import { PaymentType } from '@prisma/client';
 
 export const donationValidation = {
+  createOnline: z.object({
+    headers: z.object({
+      'idempotency-key': z.string().uuid('Invalid Idempotency-Key')
+    }).passthrough(),
+    body: z.object({
+      amount: z.number().positive('Amount must be a positive number'),
+      campaign_id: z.string().regex(/^\d+$/, 'Invalid campaign ID').optional(),
+      is_anonymous: z.boolean().optional(),
+      donor_message: z.string().max(1000).optional(),
+      donor: z.object({
+        first_name: z.string().min(1, 'First name is required').max(100),
+        last_name: z.string().max(100).optional(),
+        email: z.string().email('Invalid email format').optional().or(z.literal('')),
+        phone: z.string().regex(/^\d{10,15}$/, 'Invalid phone number').optional().or(z.literal('')),
+        pan_number: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN format').optional().or(z.literal('')),
+        address: z.string().max(500).optional(),
+        city: z.string().max(100).optional(),
+        state: z.string().max(100).optional(),
+        country: z.string().max(100).optional(),
+        pincode: z.string().max(20).optional(),
+      })
+    })
+  }),
+
   createOffline: z.object({
     body: z.object({
       amount: z.number().positive('Amount must be a positive number'),
