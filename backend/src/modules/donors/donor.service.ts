@@ -56,7 +56,10 @@ export class DonorService {
   /**
    * Create or Reuse a Donor
    */
-  public async createDonor(data: CreateDonorDTO, auditContext: AuditContext) {
+  /**
+   * Internal method used for atomic transaction composition with Donation Service
+   */
+  public async resolveOrCreateWithTransaction(tx: any, data: CreateDonorDTO, auditContext: AuditContext) {
     const {
       first_name, last_name, email, phone, pan_number,
       address, city, state, country, pincode, status
@@ -80,10 +83,10 @@ export class DonorService {
     let phoneMatch: Donor | null = null;
 
     if (email) {
-      emailMatch = await donorRepository.findByEmail(email);
+      emailMatch = await donorRepository.findByEmail(email, tx);
     }
     if (phone) {
-      phoneMatch = await donorRepository.findByPhone(phone);
+      phoneMatch = await donorRepository.findByPhone(phone, tx);
     }
 
     // 2. Evaluate matches
@@ -107,72 +110,70 @@ export class DonorService {
 
     if (targetDonorId) {
       // REUSE DONOR
-      const updatedDonor = await prisma.$transaction(async (tx) => {
-        // Find existing donor within tx
-        const existing = await tx.donor.findUnique({ where: { id: targetDonorId } });
-        if (!existing) throw new AppError('Donor not found during reuse', 500);
+      const existing = await tx.donor.findUnique({ where: { id: targetDonorId } });
+      if (!existing) throw new AppError('Donor not found during reuse', 500);
 
-        // Update fields safely. We can update name, address, etc if provided, but let's keep it safe.
-        // Actually, we'll only update fields that were passed in.
-        const updateData = { ...dto };
-        const donor = await tx.donor.update({
-          where: { id: targetDonorId },
-          data: updateData
-        });
-
-        // Audit
-        await tx.auditLog.create({
-          data: {
-            action: 'DONOR_UPDATED',
-            entity_type: 'DONOR',
-            entity_id: donor.id,
-            user_id: auditContext.actorUserId || null,
-            ip_address: auditContext.ipAddress,
-            user_agent: auditContext.userAgent,
-            old_values: this.sanitizeForAudit(existing) as any,
-            new_values: this.sanitizeForAudit(updateData) as any
-          }
-        });
-
-        return donor;
-      });
-
-      return {
-        donor: this.mapDonorResponse(updatedDonor),
-        isNew: false
-      };
-    }
-
-    // CREATE NEW DONOR
-    const newDonor = await prisma.$transaction(async (tx) => {
-      const year = new Date().getFullYear();
-      const donorNumber = await NumberSequenceService.next(tx, 'DONOR', year);
-
-      const donor = await donorRepository.create(tx, {
-        ...dto,
-        donor_number: donorNumber
+      const updateData = { ...dto };
+      const donor = await tx.donor.update({
+        where: { id: targetDonorId },
+        data: updateData
       });
 
       // Audit
       await tx.auditLog.create({
         data: {
-          action: 'DONOR_CREATED',
+          action: 'DONOR_UPDATED',
           entity_type: 'DONOR',
           entity_id: donor.id,
           user_id: auditContext.actorUserId || null,
           ip_address: auditContext.ipAddress,
           user_agent: auditContext.userAgent,
-          new_values: this.sanitizeForAudit(donor) as any
+          old_values: this.sanitizeForAudit(existing) as any,
+          new_values: this.sanitizeForAudit(updateData) as any
         }
       });
 
-      return donor;
+      return {
+        donor: this.mapDonorResponse(donor),
+        isNew: false
+      };
+    }
+
+    // CREATE NEW DONOR
+    const year = new Date().getFullYear();
+    const donorNumber = await NumberSequenceService.next(tx, 'DONOR', year);
+
+    const donor = await donorRepository.create(tx, {
+      ...dto,
+      donor_number: donorNumber
+    });
+
+    // Audit
+    await tx.auditLog.create({
+      data: {
+        action: 'DONOR_CREATED',
+        entity_type: 'DONOR',
+        entity_id: donor.id,
+        user_id: auditContext.actorUserId || null,
+        ip_address: auditContext.ipAddress,
+        user_agent: auditContext.userAgent,
+        new_values: this.sanitizeForAudit(donor) as any
+      }
     });
 
     return {
-      donor: this.mapDonorResponse(newDonor),
+      donor: this.mapDonorResponse(donor),
       isNew: true
     };
+  }
+
+  /**
+   * Create or Reuse a Donor
+   */
+  public async createDonor(data: CreateDonorDTO, auditContext: AuditContext) {
+    return prisma.$transaction(async (tx) => {
+      return this.resolveOrCreateWithTransaction(tx, data, auditContext);
+    });
   }
 
   public async getDonors(query: DonorSearchQuery) {

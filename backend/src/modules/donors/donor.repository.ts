@@ -9,29 +9,29 @@ export class DonorRepository {
     });
   }
 
-  public async findById(id: bigint) {
-    return prisma.donor.findUnique({
+  public async findById(id: bigint, tx: PrismaClientOrTransaction = prisma) {
+    return tx.donor.findUnique({
       where: { id }
     });
   }
 
-  public async findByEmail(email: string) {
+  public async findByEmail(email: string, tx: PrismaClientOrTransaction = prisma) {
     // Return first match since email is non-unique but we use it for matching
-    return prisma.donor.findFirst({
+    return tx.donor.findFirst({
       where: { email },
       orderBy: { created_at: 'asc' }
     });
   }
 
-  public async findByPhone(phone: string) {
-    return prisma.donor.findFirst({
+  public async findByPhone(phone: string, tx: PrismaClientOrTransaction = prisma) {
+    return tx.donor.findFirst({
       where: { phone },
       orderBy: { created_at: 'asc' }
     });
   }
 
-  public async update(id: bigint, data: UpdateDonorDTO) {
-    return prisma.donor.update({
+  public async update(id: bigint, data: UpdateDonorDTO, tx: PrismaClientOrTransaction = prisma) {
+    return tx.donor.update({
       where: { id },
       data
     });

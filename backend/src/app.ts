@@ -34,6 +34,9 @@ apiRouter.use('/auth', authRoutes);
 import donorRoutes from './modules/donors/donor.routes';
 apiRouter.use('/donors', donorRoutes);
 
+import donationRoutes from './modules/donations/donation.routes';
+apiRouter.use('/donations', donationRoutes);
+
 // Health check endpoint (checks application and database readiness)
 apiRouter.get('/health', async (req, res, next) => {
   try {
