@@ -188,7 +188,7 @@ describe('Donation Events Integration (Phase D)', () => {
       .set('x-razorpay-signature', signature)
       .send(payload);
       
-    if (webhookResponse.status !== 200) {
+    if (webhookResponse.status !== 200) { /* empty */
     }
 
     // 3. Await background event processing

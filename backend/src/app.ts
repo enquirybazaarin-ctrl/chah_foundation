@@ -51,6 +51,12 @@ apiRouter.use('/donors', donorRoutes);
 import donationRoutes from './modules/donations/donation.routes';
 apiRouter.use('/donations', donationRoutes);
 
+import campaignCategoryRoutes from './modules/campaigns/category.routes';
+apiRouter.use('/campaign-categories', campaignCategoryRoutes);
+
+import campaignRoutes from './modules/campaigns/campaign.routes';
+apiRouter.use('/campaigns', campaignRoutes);
+
 // Health check endpoint (checks application and database readiness)
 apiRouter.get('/health', async (req, res, next) => {
   try {

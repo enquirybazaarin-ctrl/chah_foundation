@@ -13,7 +13,7 @@ export const errorHandler = (err: any, req: Request, res: Response, _next: NextF
   } else if (err.name === 'ZodError') {
     statusCode = 400;
     message = 'Validation Error';
-    errors = err.errors;
+    errors = err.issues;
   } else {
     // Log unexpected errors securely without sending details to clients
     console.error('🔥 Unexpected Error:', err);

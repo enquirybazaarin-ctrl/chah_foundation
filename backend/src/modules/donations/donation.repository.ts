@@ -92,14 +92,15 @@ export class DonationRepository {
   }
 
   public async incrementCampaign(tx: PrismaClientOrTransaction, campaignId: bigint, amount: Prisma.Decimal) {
-    return tx.campaign.update({
-      where: { id: campaignId },
-      data: {
-        raised_amount: {
-          increment: amount
-        }
-      }
-    });
+    await tx.$executeRaw`
+      UPDATE campaigns
+      SET raised_amount = raised_amount + ${amount},
+          status = CASE
+            WHEN target_amount IS NOT NULL AND raised_amount + ${amount} >= target_amount THEN 'COMPLETED'
+            ELSE status
+          END
+      WHERE id = ${campaignId}
+    `;
   }
 
   public async search(query: DonationSearchQuery) {
