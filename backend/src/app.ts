@@ -11,7 +11,9 @@ import { AppError } from './utils/errors';
 const app = express();
 
 // Security & Parsing Middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" } // Allow serving images cross-origin
+}));
 
 const allowedOrigins = [env.FRONTEND_URL, env.ADMIN_CORS_ORIGIN].filter(Boolean) as string[];
 const devOrigins = [...allowedOrigins, 'http://localhost:3000', 'http://localhost:3001'];
@@ -28,6 +30,10 @@ app.use('/api/v1/payments', express.raw({ type: 'application/json' }), paymentRo
 
 app.use(express.json({ limit: '10kb' }));
 app.use(morgan(env.NODE_ENV === 'development' ? 'dev' : 'combined'));
+
+// Serve uploaded static files
+import path from 'path';
+app.use('/media', express.static(path.join(process.cwd(), 'uploads')));
 
 // Base API Routing Foundation
 const apiRouter = express.Router();
@@ -56,6 +62,12 @@ apiRouter.use('/campaign-categories', campaignCategoryRoutes);
 
 import campaignRoutes from './modules/campaigns/campaign.routes';
 apiRouter.use('/campaigns', campaignRoutes);
+
+import mediaRoutes from './modules/media/media.routes';
+apiRouter.use('/media', mediaRoutes);
+
+import albumRoutes from './modules/media/album.routes';
+apiRouter.use('/albums', albumRoutes);
 
 // Health check endpoint (checks application and database readiness)
 apiRouter.get('/health', async (req, res, next) => {
