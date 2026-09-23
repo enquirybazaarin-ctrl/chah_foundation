@@ -14,7 +14,7 @@ export class NumberSequenceService {
    * @returns Formatted sequence string (e.g., DNR-2026-000001)
    */
   public static async next(tx: PrismaTransactionClient, type: SequenceType, year: number): Promise<string> {
-    if (type !== 'DONOR' && type !== 'DONATION') {
+    if (type !== 'DONOR' && type !== 'DONATION' && type !== 'CERTIFICATE') {
       throw new AppError(`Unsupported sequence type: ${type}`, 400);
     }
 
@@ -23,7 +23,7 @@ export class NumberSequenceService {
     }
 
     const sequenceName = `${type}_${year}`;
-    const prefix = type === 'DONOR' ? 'DNR' : 'DON';
+    const prefix = type === 'DONOR' ? 'DNR' : type === 'DONATION' ? 'DON' : 'CHAH';
 
     // 1. Atomic increment or initialization using INSERT ... ON DUPLICATE KEY UPDATE.
     // This locks the specific row in MySQL until the transaction commits or rolls back,
@@ -38,8 +38,9 @@ export class NumberSequenceService {
 
     // 2. Fetch the newly incremented value within the same transaction.
     // Since the row is locked by the above statement, no other transaction can modify it.
+    // FOR UPDATE forces a current read, completely bypassing any snapshot isolation anomalies.
     const result = await tx.$queryRaw<{ current_value: bigint }[]>`
-      SELECT current_value FROM number_sequences WHERE name = ${sequenceName};
+      SELECT current_value FROM number_sequences WHERE name = ${sequenceName} FOR UPDATE;
     `;
 
     if (!result || result.length === 0) {

@@ -3,6 +3,7 @@ import request from 'supertest';
 import app from '../../src/app';
 import { razorpayService } from '../../src/modules/payments/razorpay.service';
 import crypto from 'crypto';
+import * as donationListeners from '../../src/events/donation.listeners';
 const uuidv4 = () => crypto.randomUUID();
 
 jest.mock('../../src/modules/payments/razorpay.service', () => ({
@@ -14,10 +15,30 @@ jest.mock('../../src/modules/payments/razorpay.service', () => ({
 }));
 
 describe('Online Donation Phase B', () => {
+  let processPromise: Promise<void> | null = null;
+  const originalProcess = donationListeners.DonationJob.processDonationSuccess;
+
+  beforeEach(() => {
+    jest.spyOn(donationListeners.DonationJob, 'processDonationSuccess').mockImplementation((donationId) => {
+      processPromise = originalProcess(donationId);
+      return processPromise;
+    });
+  });
+
+  afterEach(async () => {
+    if (processPromise) {
+      await processPromise;
+      processPromise = null;
+    }
+    jest.restoreAllMocks();
+  });
+
   let campaignId: bigint;
 
   beforeAll(async () => {
     // Basic setup
+    await prisma.certificate.deleteMany();
+    await prisma.emailLog.deleteMany();
     await prisma.payment.deleteMany();
     await prisma.donation.deleteMany();
     await prisma.campaign.deleteMany();
@@ -45,6 +66,8 @@ describe('Online Donation Phase B', () => {
   });
 
   afterAll(async () => {
+    await prisma.certificate.deleteMany();
+    await prisma.emailLog.deleteMany();
     await prisma.payment.deleteMany();
     await prisma.donation.deleteMany();
     await prisma.campaign.deleteMany();

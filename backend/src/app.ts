@@ -31,6 +31,15 @@ app.use(morgan(env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 
 // Base API Routing Foundation
 const apiRouter = express.Router();
+
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'success', message: 'Welcome to CHAH Foundation API' });
+});
+
+apiRouter.get('/', (req, res) => {
+  res.status(200).json({ status: 'success', message: 'CHAH Foundation API v1 is running' });
+});
+
 app.use('/api/v1', apiRouter);
 
 import authRoutes from './modules/auth/auth.routes';
@@ -60,5 +69,8 @@ app.use((req, res, next) => {
 
 // Centralized error-handling foundation
 app.use(errorHandler);
+
+// Initialize Event Listeners
+import './events/donation.listeners';
 
 export default app;

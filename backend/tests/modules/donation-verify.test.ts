@@ -4,6 +4,7 @@ import { prisma } from '../../src/config/database';
 import { razorpayService } from '../../src/modules/payments/razorpay.service';
 import crypto from 'crypto';
 import { env } from '../../src/config/env';
+import * as donationListeners from '../../src/events/donation.listeners';
 
 jest.mock('../../src/modules/payments/razorpay.service', () => {
   const actual = jest.requireActual('../../src/modules/payments/razorpay.service');
@@ -20,12 +21,33 @@ jest.mock('../../src/modules/payments/razorpay.service', () => {
 });
 
 describe('POST /api/v1/donations/verify', () => {
+  let processPromise: Promise<void> | null = null;
+  const originalProcess = donationListeners.DonationJob.processDonationSuccess;
+
+  beforeEach(() => {
+    jest.spyOn(donationListeners.DonationJob, 'processDonationSuccess').mockImplementation((donationId) => {
+      processPromise = originalProcess(donationId);
+      return processPromise;
+    });
+  });
+
+  afterEach(async () => {
+    if (processPromise) {
+      await processPromise;
+      processPromise = null;
+    }
+    jest.restoreAllMocks();
+  });
+
   let donorId: bigint;
   let campaignId: bigint;
 
   beforeAll(async () => {
-    await prisma.auditLog.deleteMany();
+        await prisma.auditLog.deleteMany();
+    await prisma.certificate.deleteMany();
+    await prisma.emailLog.deleteMany();
     await prisma.paymentWebhookEvent.deleteMany();
+    await prisma.refund.deleteMany();
     await prisma.payment.deleteMany();
     await prisma.donation.deleteMany();
     await prisma.donor.deleteMany();
@@ -64,8 +86,11 @@ describe('POST /api/v1/donations/verify', () => {
   });
 
   afterAll(async () => {
-    await prisma.auditLog.deleteMany();
+        await prisma.auditLog.deleteMany();
+    await prisma.certificate.deleteMany();
+    await prisma.emailLog.deleteMany();
     await prisma.paymentWebhookEvent.deleteMany();
+    await prisma.refund.deleteMany();
     await prisma.payment.deleteMany();
     await prisma.donation.deleteMany();
     await prisma.donor.deleteMany();

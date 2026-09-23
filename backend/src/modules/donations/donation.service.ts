@@ -6,6 +6,8 @@ import { donationRepository } from './donation.repository';
 import { CreateOfflineDonationDTO, CreateOnlineDonationDTO, VerifyOnlineDonationDTO, ProcessSuccessfulPaymentParams, AuditContext, DonationSearchQuery } from './donation.types';
 import { Prisma } from '@prisma/client';
 import { razorpayService } from '../payments/razorpay.service';
+import { appEventEmitter } from '../../events/event-emitter';
+import { DonationEvents } from '../../events/donation.events';
 
 export class DonationService {
   /**
@@ -235,7 +237,7 @@ export class DonationService {
    * Single centralized method for both checkout verification and webhook processing.
    */
   public async processSuccessfulPayment(params: ProcessSuccessfulPaymentParams) {
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       // 1. Fetch payment and donation
       const payment = await tx.payment.findUnique({
         where: { id: params.paymentId },
@@ -369,6 +371,14 @@ export class DonationService {
         alreadyProcessed: false
       };
     });
+
+    if (!result.alreadyProcessed) {
+      appEventEmitter.emit(DonationEvents.DONATION_SUCCESS, {
+        donationId: BigInt(result.donation.id)
+      });
+    }
+
+    return result;
   }
 
   /**
@@ -435,7 +445,7 @@ export class DonationService {
    * Confirm Offline Donation
    */
   public async confirmDonation(id: bigint, auditContext: AuditContext) {
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const donation = await tx.donation.findUnique({
         where: { id }
       });
@@ -476,6 +486,12 @@ export class DonationService {
       const updated = await tx.donation.findUnique({ where: { id }, include: { payments: true } });
       return this.mapDonationResponse(updated);
     });
+
+    appEventEmitter.emit(DonationEvents.DONATION_SUCCESS, {
+      donationId: id
+    });
+
+    return result;
   }
 
   /**

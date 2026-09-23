@@ -16,7 +16,12 @@ describe('Donor Module Tests', () => {
 
   beforeAll(async () => {
     // Clear data securely in chah_dev
-    await prisma.auditLog.deleteMany();
+        await prisma.auditLog.deleteMany();
+    await prisma.certificate.deleteMany();
+    await prisma.emailLog.deleteMany();
+    await prisma.paymentWebhookEvent.deleteMany();
+    await prisma.refund.deleteMany();
+    await prisma.payment.deleteMany();
     await prisma.donation.deleteMany();
     await prisma.donor.deleteMany();
     await prisma.user.deleteMany();
@@ -69,7 +74,12 @@ describe('Donor Module Tests', () => {
   });
 
   afterAll(async () => {
-    await prisma.auditLog.deleteMany();
+        await prisma.auditLog.deleteMany();
+    await prisma.certificate.deleteMany();
+    await prisma.emailLog.deleteMany();
+    await prisma.paymentWebhookEvent.deleteMany();
+    await prisma.refund.deleteMany();
+    await prisma.payment.deleteMany();
     await prisma.donation.deleteMany();
     await prisma.donor.deleteMany();
     await prisma.user.deleteMany();
@@ -80,7 +90,12 @@ describe('Donor Module Tests', () => {
   });
 
   beforeEach(async () => {
-    await prisma.auditLog.deleteMany();
+        await prisma.auditLog.deleteMany();
+    await prisma.certificate.deleteMany();
+    await prisma.emailLog.deleteMany();
+    await prisma.paymentWebhookEvent.deleteMany();
+    await prisma.refund.deleteMany();
+    await prisma.payment.deleteMany();
     await prisma.donation.deleteMany();
     await prisma.donor.deleteMany();
     await prisma.numberSequence.deleteMany();

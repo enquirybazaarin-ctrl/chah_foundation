@@ -3,11 +3,30 @@ import app from '../../src/app';
 import { prisma } from '../../src/config/database';
 import { sign } from 'jsonwebtoken';
 import { env } from '../../src/config/env';
+import * as donationListeners from '../../src/events/donation.listeners';
 import { donationRepository } from '../../src/modules/donations/donation.repository';
 
 const generateToken = (userId: bigint) => sign({ id: userId.toString() }, env.JWT_SECRET, { expiresIn: '1h' });
 
 describe('Donation Module Tests', () => {
+  let processPromise: Promise<void> | null = null;
+  const originalProcess = donationListeners.DonationJob.processDonationSuccess;
+
+  beforeEach(() => {
+    jest.spyOn(donationListeners.DonationJob, 'processDonationSuccess').mockImplementation((donationId) => {
+      processPromise = originalProcess(donationId);
+      return processPromise;
+    });
+  });
+
+  afterEach(async () => {
+    if (processPromise) {
+      await processPromise;
+      processPromise = null;
+    }
+    jest.restoreAllMocks();
+  });
+
   let adminUserId: bigint;
   let adminToken: string;
   let regularUserId: bigint;
@@ -15,7 +34,10 @@ describe('Donation Module Tests', () => {
   let campaignId: bigint;
 
   beforeAll(async () => {
-    await prisma.auditLog.deleteMany();
+        await prisma.auditLog.deleteMany();
+    await prisma.certificate.deleteMany();
+    await prisma.emailLog.deleteMany();
+    await prisma.paymentWebhookEvent.deleteMany();
     await prisma.refund.deleteMany();
     await prisma.payment.deleteMany();
     await prisma.donation.deleteMany();
@@ -65,7 +87,10 @@ describe('Donation Module Tests', () => {
   });
 
   afterAll(async () => {
-    await prisma.auditLog.deleteMany();
+        await prisma.auditLog.deleteMany();
+    await prisma.certificate.deleteMany();
+    await prisma.emailLog.deleteMany();
+    await prisma.paymentWebhookEvent.deleteMany();
     await prisma.refund.deleteMany();
     await prisma.payment.deleteMany();
     await prisma.donation.deleteMany();
@@ -80,7 +105,10 @@ describe('Donation Module Tests', () => {
   });
 
   beforeEach(async () => {
-    await prisma.auditLog.deleteMany();
+        await prisma.auditLog.deleteMany();
+    await prisma.certificate.deleteMany();
+    await prisma.emailLog.deleteMany();
+    await prisma.paymentWebhookEvent.deleteMany();
     await prisma.refund.deleteMany();
     await prisma.payment.deleteMany();
     await prisma.donation.deleteMany();
