@@ -53,7 +53,23 @@ router.get(
   donorController.getDonors
 );
 
-// 3. GET /api/v1/donors/:id
+// 3. GET /api/v1/donors/duplicates (MUST be before /:id)
+router.get(
+  '/duplicates',
+  protect,
+  requirePermission('read', 'donors'),
+  donorController.getDuplicateSuggestions
+);
+
+// 4. POST /api/v1/donors/duplicates/:id/resolve
+router.post(
+  '/duplicates/:id/resolve',
+  protect,
+  requirePermission('update', 'donors'),
+  donorController.resolveDuplicateSuggestion
+);
+
+// 5. GET /api/v1/donors/:id
 router.get(
   '/:id',
   protect,

@@ -83,3 +83,39 @@ export const getDonorDonations = async (req: Request, res: Response, next: NextF
     next(error);
   }
 };
+
+export const getDuplicateSuggestions = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
+    
+    const result = await donorService.getDuplicateSuggestions(page, limit);
+    res.status(200).json({
+      status: 'success',
+      ...result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resolveDuplicateSuggestion = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = BigInt(req.params.id as string);
+    const { action } = req.body; // 'merge' or 'ignore'
+    
+    const auditContext = {
+      actorUserId: req.user?.id,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    };
+
+    const suggestion = await donorService.resolveDuplicateSuggestion(id, action, auditContext);
+    res.status(200).json({
+      status: 'success',
+      data: suggestion
+    });
+  } catch (error) {
+    next(error);
+  }
+};

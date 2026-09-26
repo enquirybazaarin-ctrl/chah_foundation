@@ -8,6 +8,8 @@ import { prisma } from './config/database';
 import { errorHandler } from './middleware/error.middleware';
 import { AppError } from './utils/errors';
 
+(BigInt.prototype as any).toJSON = function () { return this.toString(); };
+
 const app = express();
 
 // Security & Parsing Middleware
@@ -16,7 +18,7 @@ app.use(helmet({
 }));
 
 const allowedOrigins = [env.FRONTEND_URL, env.ADMIN_CORS_ORIGIN].filter(Boolean) as string[];
-const devOrigins = [...allowedOrigins, 'http://localhost:3000', 'http://localhost:3001'];
+const devOrigins = [...allowedOrigins, 'http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001'];
 
 app.use(cors({ 
   origin: env.NODE_ENV === 'production' ? allowedOrigins : devOrigins,
@@ -57,6 +59,14 @@ apiRouter.use('/donors', donorRoutes);
 import donationRoutes from './modules/donations/donation.routes';
 apiRouter.use('/donations', donationRoutes);
 
+apiRouter.use('/payments', paymentRoutes);
+
+import certificateRoutes from './modules/certificates/certificate.routes';
+apiRouter.use('/certificates', certificateRoutes);
+
+import subscriptionRoutes from './modules/subscriptions/subscription.routes';
+apiRouter.use('/subscriptions', subscriptionRoutes);
+
 import campaignCategoryRoutes from './modules/campaigns/category.routes';
 apiRouter.use('/campaign-categories', campaignCategoryRoutes);
 
@@ -68,6 +78,27 @@ apiRouter.use('/media', mediaRoutes);
 
 import albumRoutes from './modules/media/album.routes';
 apiRouter.use('/albums', albumRoutes);
+
+import projectRoutes from './modules/projects/project.routes';
+apiRouter.use('/projects', projectRoutes);
+
+import testimonialRoutes from './modules/testimonials/testimonial.routes';
+apiRouter.use('/testimonials', testimonialRoutes);
+
+import faqRoutes from './modules/faqs/faq.routes';
+apiRouter.use('/faqs', faqRoutes);
+
+import metricRoutes from './modules/metrics/metric.routes';
+apiRouter.use('/impact-metrics', metricRoutes);
+
+import cmsRoutes from './modules/cms/cms.routes';
+apiRouter.use('/cms', cmsRoutes);
+
+import operationsRoutes from './modules/operations/operations.routes';
+apiRouter.use('/operations', operationsRoutes);
+
+import userRoutes from './modules/users/user.routes';
+apiRouter.use('/users', userRoutes);
 
 // Health check endpoint (checks application and database readiness)
 apiRouter.get('/health', async (req, res, next) => {

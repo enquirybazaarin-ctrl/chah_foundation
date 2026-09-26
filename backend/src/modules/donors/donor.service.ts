@@ -33,11 +33,20 @@ export class DonorService {
   /**
    * Safe mapping for external response
    */
-  private mapDonorResponse(donor: Donor) {
+  private mapDonorResponse(donor: any) {
+    let total_donated = 0;
+    if (donor.donations && Array.isArray(donor.donations)) {
+      total_donated = donor.donations.reduce((acc: number, d: any) => acc + Number(d.amount), 0);
+    }
+    
+    // Remove donations array from response payload
+    const { donations, ...donorWithoutDonations } = donor;
+
     return {
-      ...donor,
+      ...donorWithoutDonations,
       id: donor.id.toString(),
-      pan_number: this.maskPan(donor.pan_number)
+      pan_number: this.maskPan(donor.pan_number),
+      total_donated
     };
   }
 
@@ -268,6 +277,102 @@ export class DonorService {
         total_pages: Math.ceil(result.total / limit)
       }
     };
+  }
+
+  // ------------------------------------------------------------------
+  // Duplicate Suggestions (Priority 2)
+  // ------------------------------------------------------------------
+  public async getDuplicateSuggestions(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+
+    const [suggestions, total] = await Promise.all([
+      prisma.duplicateDonorSuggestion.findMany({
+        where: { status: 'PENDING' },
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' },
+        include: {
+          primary_donor: true,
+          duplicate: true
+        }
+      }),
+      prisma.duplicateDonorSuggestion.count({ where: { status: 'PENDING' } })
+    ]);
+
+    return {
+      data: suggestions.map(s => ({
+        id: s.id.toString(),
+        reason: s.reason,
+        status: s.status,
+        created_at: s.created_at,
+        primary_donor: this.mapDonorResponse(s.primary_donor),
+        duplicate_donor: this.mapDonorResponse(s.duplicate)
+      })),
+      meta: {
+        total,
+        page,
+        limit,
+        total_pages: Math.ceil(total / limit)
+      }
+    };
+  }
+
+  public async resolveDuplicateSuggestion(id: bigint, action: 'merge' | 'ignore', auditContext: AuditContext) {
+    const suggestion = await prisma.duplicateDonorSuggestion.findUnique({
+      where: { id },
+      include: { primary_donor: true, duplicate: true }
+    });
+
+    if (!suggestion) {
+      throw new AppError('Suggestion not found', 404);
+    }
+
+    if (action === 'ignore') {
+      const updated = await prisma.duplicateDonorSuggestion.update({
+        where: { id },
+        data: { status: 'IGNORED' }
+      });
+      return { id: updated.id.toString(), status: updated.status };
+    }
+
+    if (action === 'merge') {
+      return prisma.$transaction(async (tx) => {
+        // 1. Reassign donations to primary donor
+        await tx.donation.updateMany({
+          where: { donor_id: suggestion.duplicate_id },
+          data: { donor_id: suggestion.primary_donor_id }
+        });
+
+        // 2. Mark duplicate donor as INACTIVE
+        await tx.donor.update({
+          where: { id: suggestion.duplicate_id },
+          data: { status: 'INACTIVE' }
+        });
+
+        // 3. Mark suggestion as MERGED
+        const updated = await tx.duplicateDonorSuggestion.update({
+          where: { id },
+          data: { status: 'MERGED' }
+        });
+
+        // 4. Audit Log
+        await tx.auditLog.create({
+          data: {
+            action: 'DONOR_MERGED',
+            entity_type: 'DONOR',
+            entity_id: suggestion.primary_donor_id,
+            user_id: auditContext.actorUserId || null,
+            ip_address: auditContext.ipAddress,
+            user_agent: auditContext.userAgent,
+            new_values: { merged_from_duplicate_id: suggestion.duplicate_id.toString() } as any
+          }
+        });
+
+        return { id: updated.id.toString(), status: updated.status };
+      });
+    }
+
+    throw new AppError('Invalid action', 400);
   }
 }
 

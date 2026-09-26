@@ -38,7 +38,9 @@ export class DonorRepository {
   }
 
   public async search(query: DonorSearchQuery) {
-    const { page = 1, limit = 10, search, status } = query;
+    const { search, status } = query;
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
     const skip = (page - 1) * limit;
 
     const where: Prisma.DonorWhereInput = {};
@@ -63,7 +65,13 @@ export class DonorRepository {
         where,
         skip,
         take: limit,
-        orderBy: { created_at: 'desc' }
+        orderBy: { created_at: 'desc' },
+        include: {
+          donations: {
+            where: { status: 'SUCCESS' },
+            select: { amount: true }
+          }
+        }
       })
     ]);
 
@@ -73,8 +81,10 @@ export class DonorRepository {
     };
   }
 
-  public async findDonations(donorId: bigint, page = 1, limit = 10) {
-    const skip = (page - 1) * limit;
+  public async findDonations(donorId: bigint, page: any = 1, limit: any = 10) {
+    const pageNum = Number(page) || 1;
+    const limitNum = Number(limit) || 10;
+    const skip = (pageNum - 1) * limitNum;
 
     const where: Prisma.DonationWhereInput = {
       donor_id: donorId
@@ -85,7 +95,7 @@ export class DonorRepository {
       prisma.donation.findMany({
         where,
         skip,
-        take: limit,
+        take: limitNum,
         orderBy: { created_at: 'desc' }
       })
     ]);

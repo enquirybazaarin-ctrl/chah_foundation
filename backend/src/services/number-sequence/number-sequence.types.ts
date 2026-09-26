@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 
-export type SequenceType = 'DONOR' | 'DONATION' | 'CERTIFICATE';
+export type SequenceType = 'DONOR' | 'DONATION' | 'CERTIFICATE' | 'SUBSCRIPTION';
 
 /**
  * PrismaTransactionClient defines the shape of a valid Prisma transaction client

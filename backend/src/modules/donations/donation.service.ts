@@ -21,6 +21,14 @@ export class DonationService {
       campaign_id: donation.campaign_id?.toString() || null,
       created_by_id: donation.created_by_id?.toString() || null,
       amount: donation.amount.toString(),
+      payment_method: donation.payment_type, // Map Prisma's payment_type to frontend's payment_method
+      certificate_issued: !!donation.certificate,
+      certificate_email_sent: false, // Update this if email logic is added later
+      certificate: donation.certificate ? {
+        ...donation.certificate,
+        id: donation.certificate.id.toString(),
+        donation_id: donation.certificate.donation_id.toString()
+      } : undefined,
       payments: donation.payments?.map((p: any) => ({
         ...p,
         id: p.id.toString(),

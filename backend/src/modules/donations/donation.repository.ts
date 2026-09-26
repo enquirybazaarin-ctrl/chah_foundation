@@ -158,7 +158,9 @@ export class DonationRepository {
               id: true,
               title: true
             }
-          }
+          },
+          certificate: true,
+          payments: true
         }
       })
     ]);

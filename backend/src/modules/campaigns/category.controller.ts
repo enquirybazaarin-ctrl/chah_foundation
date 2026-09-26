@@ -36,3 +36,12 @@ export const updateCategory = async (req: Request, res: Response, next: NextFunc
     next(error);
   }
 };
+
+export const deleteCategory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await campaignCategoryService.deleteCategory(BigInt(req.params.id as string));
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+};

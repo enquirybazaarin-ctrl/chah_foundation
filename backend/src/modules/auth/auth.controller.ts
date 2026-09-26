@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { loginSchema } from './auth.validation';
+import { loginSchema, updatePasswordSchema, adminResetPasswordSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.validation';
 import * as authService from './auth.service';
 import { env } from '../../config/env';
 import { prisma } from '../../config/database';
@@ -71,3 +71,49 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
     next(error);
   }
 };
+
+export const updatePassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validatedData = updatePasswordSchema.parse(req.body);
+    await authService.updatePassword(req.user!.id, validatedData.oldPassword, validatedData.newPassword);
+    res.status(200).json({ status: 'success', message: 'Password updated successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const adminResetPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const hasManageUsers = req.user!.permissions.some(p => p.resource === 'users' && p.action === 'manage');
+    if (req.user!.role.name !== 'SUPER_ADMIN' && !hasManageUsers) {
+      return res.status(403).json({ status: 'error', message: 'Forbidden: Missing manage:users permission' });
+    }
+
+    const validatedData = adminResetPasswordSchema.parse(req.body);
+    await authService.adminResetPassword(req.user!.id, BigInt(validatedData.userId), validatedData.newPassword);
+    res.status(200).json({ status: 'success', message: 'User password reset successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validatedData = forgotPasswordSchema.parse(req.body);
+    await authService.forgotPassword(validatedData.email);
+    res.status(200).json({ status: 'success', message: 'If that email exists, a reset link has been sent' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validatedData = resetPasswordSchema.parse(req.body);
+    await authService.resetPassword(validatedData.email, validatedData.token, validatedData.newPassword);
+    res.status(200).json({ status: 'success', message: 'Password reset successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+

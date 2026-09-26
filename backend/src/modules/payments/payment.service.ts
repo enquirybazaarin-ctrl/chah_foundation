@@ -4,6 +4,11 @@ import { razorpayService } from './razorpay.service';
 import { donationRepository } from '../donations/donation.repository';
 import { donationService } from '../donations/donation.service';
 import { AuditContext } from '../donations/donation.types';
+import { NumberSequenceService } from '../../services/number-sequence/number-sequence.service';
+import { subscriptionRepository } from '../subscriptions/subscription.repository';
+import { Prisma } from '@prisma/client';
+import { appEventEmitter } from '../../events/event-emitter';
+import { DonationEvents } from '../../events/donation.events';
 
 export class PaymentService {
   /**
@@ -129,6 +134,14 @@ export class PaymentService {
                 }
               });
 
+              await tx.donation.update({
+                where: { id: internalPayment.donation_id },
+                data: {
+                  status: 'FAILED',
+                  updated_at: new Date()
+                }
+              });
+
               if (webhookEvent) {
                 await tx.paymentWebhookEvent.update({
                   where: { id: webhookEvent.id },
@@ -150,6 +163,94 @@ export class PaymentService {
               processing_state: 'PROCESSED',
               processed_at: new Date()
             }
+          });
+        }
+      } else if (eventType === 'subscription.charged') {
+        const subscriptionEntity = body.payload?.subscription?.entity;
+        const paymentEntity = body.payload?.payment?.entity;
+        
+        if (subscriptionEntity && paymentEntity) {
+          const razorpaySubscriptionId = subscriptionEntity.id;
+          const providerPaymentId = paymentEntity.id;
+          const amount = paymentEntity.amount; // in paise
+          const method = paymentEntity.method;
+          
+          const internalSubscription = await subscriptionRepository.findSubscriptionByRazorpayId(razorpaySubscriptionId);
+          if (internalSubscription) {
+            const transactionResult = await prisma.$transaction(async (tx) => {
+              // Create donation
+              const year = new Date().getFullYear();
+              const donationNumber = await NumberSequenceService.next(tx as any, 'DONATION', year);
+              
+              const donation = await tx.donation.create({
+                data: {
+                  donation_number: donationNumber,
+                  donor_id: internalSubscription.donor_id,
+                  campaign_id: internalSubscription.campaign_id,
+                  amount: new Prisma.Decimal(amount / 100),
+                  payment_type: 'ONLINE',
+                  status: 'SUCCESS', // Will trigger after
+                  is_anonymous: false
+                }
+              });
+
+              // Create payment
+              const payment = await tx.payment.create({
+                data: {
+                  donation_id: donation.id,
+                  amount: new Prisma.Decimal(amount / 100),
+                  provider: 'RAZORPAY',
+                  provider_payment_id: providerPaymentId,
+                  status: 'CAPTURED',
+                  method: method
+                }
+              });
+              
+              // Update Subscription
+              await tx.subscription.update({
+                where: { id: internalSubscription.id },
+                data: { 
+                  status: 'ACTIVE',
+                  next_billing_date: subscriptionEntity.charge_at ? new Date(subscriptionEntity.charge_at * 1000) : null 
+                }
+              });
+
+              // Trigger post-success safely outside or inside if we just rely on cron, 
+              // but we can call it manually here or let `processSuccessfulPayment` do it.
+              // Wait, to avoid cyclic complexity, we just mark webhook PROCESSED
+              if (webhookEvent) {
+                await tx.paymentWebhookEvent.update({
+                  where: { id: webhookEvent.id },
+                  data: { processing_state: 'PROCESSED', processed_at: new Date() }
+                });
+              }
+              
+              return { donationId: donation.id };
+            });
+            
+            // Emit success event outside transaction to trigger side-effects (Email/Certificate)
+            if (transactionResult?.donationId) {
+              appEventEmitter.emit(DonationEvents.DONATION_SUCCESS, { donationId: transactionResult.donationId });
+            }
+          }
+        }
+      } else if (eventType === 'subscription.cancelled' || eventType === 'subscription.halted' || eventType === 'subscription.paused') {
+        const subscriptionEntity = body.payload?.subscription?.entity;
+        if (subscriptionEntity) {
+          const razorpaySubscriptionId = subscriptionEntity.id;
+          const internalSubscription = await subscriptionRepository.findSubscriptionByRazorpayId(razorpaySubscriptionId);
+          if (internalSubscription) {
+            await prisma.subscription.update({
+              where: { id: internalSubscription.id },
+              data: { status: eventType === 'subscription.cancelled' ? 'CANCELLED' : 'PAUSED' }
+            });
+          }
+        }
+        
+        if (webhookEvent) {
+          await prisma.paymentWebhookEvent.update({
+            where: { id: webhookEvent.id },
+            data: { processing_state: 'PROCESSED', processed_at: new Date() }
           });
         }
       } else {

@@ -21,4 +21,9 @@ router.post('/login', loginRateLimiter, authController.login);
 router.post('/logout', protect, authController.logout);
 router.get('/me', protect, authController.getMe);
 
+router.post('/update-password', protect, authController.updatePassword);
+router.post('/admin-reset-password', protect, authController.adminResetPassword);
+router.post('/forgot-password', authController.forgotPassword);
+router.post('/reset-password', authController.resetPassword);
+
 export default router;

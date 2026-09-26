@@ -14,7 +14,7 @@ export class NumberSequenceService {
    * @returns Formatted sequence string (e.g., DNR-2026-000001)
    */
   public static async next(tx: PrismaTransactionClient, type: SequenceType, year: number): Promise<string> {
-    if (type !== 'DONOR' && type !== 'DONATION' && type !== 'CERTIFICATE') {
+    if (type !== 'DONOR' && type !== 'DONATION' && type !== 'CERTIFICATE' && type !== 'SUBSCRIPTION') {
       throw new AppError(`Unsupported sequence type: ${type}`, 400);
     }
 
@@ -23,7 +23,7 @@ export class NumberSequenceService {
     }
 
     const sequenceName = `${type}_${year}`;
-    const prefix = type === 'DONOR' ? 'DNR' : type === 'DONATION' ? 'DON' : 'CHAH';
+    const prefix = type === 'DONOR' ? 'DNR' : type === 'DONATION' ? 'DON' : type === 'SUBSCRIPTION' ? 'SUB' : 'CHAH';
 
     // 1. Atomic increment or initialization using INSERT ... ON DUPLICATE KEY UPDATE.
     // This locks the specific row in MySQL until the transaction commits or rolls back,

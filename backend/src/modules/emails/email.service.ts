@@ -90,6 +90,40 @@ export class EmailService {
 
     return await prisma.emailLog.findUnique({ where: { id: emailLogId } });
   }
+
+  public async sendAdminDigest(data: { date: string; totalAmount: string; donationCount: number; newDonors: number; adminEmail: string }) {
+    const templateId = process.env.MSG91_ADMIN_DIGEST_TEMPLATE_ID || 'dummy_admin_digest_template';
+
+    const newLog = await emailRepository.createLog({
+      recipient_email: data.adminEmail,
+      provider: this.provider instanceof Msg91Provider ? 'MSG91' : 'MOCK',
+      template_id: templateId,
+      delivery_status: 'PENDING',
+      related_entity_type: 'SYSTEM',
+    });
+
+    const variables = {
+      date: data.date,
+      total_amount: data.totalAmount,
+      donation_count: data.donationCount.toString(),
+      new_donors: data.newDonors.toString(),
+    };
+
+    const result = await this.provider.sendEmail({
+      to: data.adminEmail,
+      templateId,
+      variables,
+      relatedEntityType: 'SYSTEM'
+    });
+
+    if (result.success) {
+      await emailRepository.updateLogStatus(newLog.id, 'PENDING', result.messageId);
+    } else {
+      await emailRepository.updateLogStatus(newLog.id, 'FAILED', undefined, result.error);
+    }
+
+    return await prisma.emailLog.findUnique({ where: { id: newLog.id } });
+  }
 }
 
 export const emailService = new EmailService();

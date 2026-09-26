@@ -125,3 +125,68 @@ export const getCurrentUser = async (userId: bigint): Promise<AuthenticatedUser 
     }))
   };
 };
+
+export const updatePassword = async (userId: bigint, oldPassword: string, newPassword: string) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new AppError('User not found', 404);
+
+  const isValid = await argon2.verify(user.password_hash, oldPassword);
+  if (!isValid) throw new AppError('Invalid old password', 400);
+
+  const newHash = await argon2.hash(newPassword);
+  await prisma.user.update({ where: { id: userId }, data: { password_hash: newHash } });
+};
+
+export const adminResetPassword = async (adminId: bigint, targetUserId: bigint, newPassword: string) => {
+  const user = await prisma.user.findUnique({ where: { id: targetUserId } });
+  if (!user) throw new AppError('User not found', 404);
+
+  const newHash = await argon2.hash(newPassword);
+  await prisma.user.update({ where: { id: targetUserId }, data: { password_hash: newHash } });
+  
+  await prisma.auditLog.create({
+    data: {
+      action: 'ADMIN_PASSWORD_RESET',
+      entity_type: 'AUTH',
+      entity_id: targetUserId,
+      user_id: adminId,
+      new_values: { targetUserId: targetUserId.toString() }
+    }
+  });
+};
+
+export const forgotPassword = async (email: string) => {
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  
+  if (!user) {
+    // Return success to prevent email enumeration
+    return;
+  }
+
+  // Token is valid for 15 minutes and tied to current password hash
+  const secret = env.JWT_SECRET + user.password_hash;
+  const token = jwt.sign({ id: user.id.toString(), email: user.email }, secret, { expiresIn: '15m' });
+
+  // In production this would send via MSG91
+  console.log(`\n======================================================`);
+  console.log(`[FORGOT PASSWORD] Reset Link generated for ${user.email}`);
+  console.log(`Link: ${env.ADMIN_CORS_ORIGIN}/reset-password?token=${token}&email=${encodeURIComponent(user.email)}`);
+  console.log(`======================================================\n`);
+};
+
+export const resetPassword = async (email: string, token: string, newPassword: string) => {
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  if (!user) throw new AppError('Invalid token or email', 400);
+
+  const secret = env.JWT_SECRET + user.password_hash;
+  try {
+    jwt.verify(token, secret);
+  } catch (err) {
+    throw new AppError('Invalid or expired token', 400);
+  }
+
+  const newHash = await argon2.hash(newPassword);
+  await prisma.user.update({ where: { id: user.id }, data: { password_hash: newHash } });
+};

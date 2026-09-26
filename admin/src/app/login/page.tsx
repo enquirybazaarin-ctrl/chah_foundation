@@ -1,78 +1,83 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import api from '@/lib/api';
+import { useAuth } from '@/components/providers/AuthProvider';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+  const { user, loading, refreshSession } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
+    setIsSubmitting(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/v1/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
+      await api.post('/api/v1/auth/login', { email, password });
+      await refreshSession();
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } }; message?: string };
+      setError(axiosErr.response?.data?.message || axiosErr.message || 'Login failed');
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
+  if (loading) {
+    return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
+  }
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 bg-white rounded shadow-md">
-        <h1 className="mb-6 text-2xl font-bold text-center">Admin Login</h1>
+      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md border border-gray-200">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">CHAH Foundation</h1>
+          <p className="text-gray-500 mt-2">Admin Portal Login</p>
+        </div>
         
         {error && (
-          <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded">
+          <div className="p-3 mb-6 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleLogin}>
-          <div className="mb-4">
-            <label className="block mb-2 text-sm font-bold text-gray-700" htmlFor="email">
-              Email
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div>
+            <label className="block mb-2 text-sm font-semibold text-gray-700" htmlFor="email">
+              Email Address
             </label>
             <input
               id="email"
               type="email"
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
           
-          <div className="mb-6">
-            <label className="block mb-2 text-sm font-bold text-gray-700" htmlFor="password">
+          <div>
+            <label className="block mb-2 text-sm font-semibold text-gray-700" htmlFor="password">
               Password
             </label>
             <input
               id="password"
               type="password"
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -81,11 +86,12 @@ export default function LoginPage() {
           
           <button
             type="submit"
-            disabled={loading}
-            className="w-full px-4 py-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-700 disabled:opacity-50"
+            disabled={isSubmitting}
+            className="w-full px-4 py-2 font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
-            {loading ? 'Logging in...' : 'Log In'}
+            {isSubmitting ? 'Authenticating...' : 'Sign In'}
           </button>
+
         </form>
       </div>
     </div>

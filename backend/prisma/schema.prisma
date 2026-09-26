@@ -92,6 +92,10 @@ model Donor {
   updated_at   DateTime    @updatedAt
 
   donations Donation[]
+  subscriptions Subscription[]
+  tags      DonorTag[]
+  duplicate_suggestions_as_primary   DuplicateDonorSuggestion[] @relation("PrimaryDonor")
+  duplicate_suggestions_as_duplicate DuplicateDonorSuggestion[] @relation("DuplicateDonor")
 
   @@index([donor_number])
   @@index([email])
@@ -145,6 +149,44 @@ model Donation {
   @@index([campaign_id])
   @@index([created_by_id])
   @@map("donations")
+}
+
+// Subscription Domain
+
+enum SubscriptionFrequency {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  COMPLETED
+}
+
+model Subscription {
+  id                       BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  subscription_number      String                @unique
+  donor_id                 BigInt                @db.UnsignedBigInt
+  campaign_id              BigInt?               @db.UnsignedBigInt
+  amount                   Decimal               @db.Decimal(12, 2)
+  currency                 String                @default("INR")
+  frequency                SubscriptionFrequency
+  status                   SubscriptionStatus    @default(ACTIVE)
+  next_billing_date        DateTime?
+  razorpay_subscription_id String?               @unique
+  notes                    String?
+  created_at               DateTime              @default(now())
+  updated_at               DateTime              @updatedAt
+
+  donor    Donor     @relation(fields: [donor_id], references: [id], onDelete: Restrict)
+  campaign Campaign? @relation(fields: [campaign_id], references: [id], onDelete: Restrict)
+
+  @@index([donor_id])
+  @@index([campaign_id])
+  @@map("subscriptions")
 }
 
 // Payment Domain
@@ -318,6 +360,7 @@ model Campaign {
   category       CampaignCategory @relation(fields: [category_id], references: [id], onDelete: Restrict)
   featured_image Media?           @relation(fields: [featured_image_id], references: [id], onDelete: SetNull)
   donations      Donation[]
+  subscriptions  Subscription[]
 
   @@index([slug])
   @@index([category_id])
@@ -590,4 +633,81 @@ model NumberSequence {
   updated_at    DateTime @updatedAt
 
   @@map("number_sequences")
+}
+
+// Automation Domain (Priority 1)
+
+model SubscriptionRetryPolicy {
+  id              BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  subscription_id String    @unique // Razorpay sub_xxx ID
+  retry_count     Int       @default(0)
+  max_retries     Int       @default(3)
+  next_retry_at   DateTime?
+  status          String    @default("ACTIVE") // ACTIVE, EXHAUSTED
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  @@map("subscription_retry_policies")
+}
+
+model Form10BEReport {
+  id             BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  financial_year String
+  file_url       String?
+  generated_by   BigInt    @db.UnsignedBigInt
+  status         String    @default("PENDING") // PENDING, COMPLETED, FAILED
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  @@map("form_10be_reports")
+}
+
+model BankReconciliationJob {
+  id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  filename         String
+  total_records    Int       @default(0)
+  matched_records  Int       @default(0)
+  status           String    @default("PROCESSING") // PROCESSING, COMPLETED, FAILED
+  uploaded_by      BigInt    @db.UnsignedBigInt
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  @@map("bank_reconciliation_jobs")
+}
+
+// ==========================================
+// Automation Domain (Priority 2)
+// ==========================================
+
+model DonorTag {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  donor_id    BigInt   @db.UnsignedBigInt
+  tag_name    String   // e.g. "Lapsed", "Major Donor", "New"
+  assigned_by String   @default("SYSTEM") // SYSTEM or USER
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  donor Donor @relation(fields: [donor_id], references: [id], onDelete: Cascade)
+
+  @@unique([donor_id, tag_name])
+  @@index([donor_id])
+  @@map("donor_tags")
+}
+
+model DuplicateDonorSuggestion {
+  id               BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  primary_donor_id BigInt   @db.UnsignedBigInt
+  duplicate_id     BigInt   @db.UnsignedBigInt
+  reason           String   // e.g. "MATCHING_EMAIL", "MATCHING_PHONE", "MATCHING_PAN"
+  status           String   @default("PENDING") // PENDING, MERGED, IGNORED
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  primary_donor Donor @relation("PrimaryDonor", fields: [primary_donor_id], references: [id], onDelete: Cascade)
+  duplicate     Donor @relation("DuplicateDonor", fields: [duplicate_id], references: [id], onDelete: Cascade)
+
+  @@unique([primary_donor_id, duplicate_id])
+  @@index([primary_donor_id])
+  @@index([duplicate_id])
+  @@map("duplicate_donor_suggestions")
 }

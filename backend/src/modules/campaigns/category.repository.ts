@@ -32,6 +32,12 @@ export class CampaignCategoryRepository {
       data
     });
   }
+
+  public async delete(id: bigint) {
+    return prisma.campaignCategory.delete({
+      where: { id }
+    });
+  }
 }
 
 export const campaignCategoryRepository = new CampaignCategoryRepository();

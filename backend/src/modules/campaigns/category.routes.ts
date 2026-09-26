@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createCategory, getCategories, getCategoryById, updateCategory } from './category.controller';
+import { createCategory, getCategories, getCategoryById, updateCategory, deleteCategory } from './category.controller';
 import { protect } from '../auth/auth.middleware';
 import { requirePermission } from '../auth/rbac.middleware';
 import { validateRequest } from '../../middleware/validate.middleware';
@@ -26,6 +26,13 @@ router.patch(
   requirePermission('update', 'campaigns'),
   validateRequest(updateCampaignCategorySchema),
   updateCategory
+);
+
+router.delete(
+  '/:id',
+  protect,
+  requirePermission('delete', 'campaigns'),
+  deleteCategory
 );
 
 export default router;

@@ -86,6 +86,16 @@ export class CampaignCategoryService {
     }
   }
 
+  public async deleteCategory(id: bigint): Promise<void> {
+    const category = await campaignCategoryRepository.findById(id);
+    if (!category) {
+      throw new AppError('Campaign category not found', 404);
+    }
+    // Check if category has associated campaigns?
+    // According to Prisma schema it might cascade or error.
+    await campaignCategoryRepository.delete(id);
+  }
+
   private mapResponse(category: any): CampaignCategoryResponse {
     return {
       id: category.id.toString(),

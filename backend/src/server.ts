@@ -2,11 +2,13 @@ import app from './app';
 import { env } from './config/env';
 import { disconnectDB } from './config/database';
 import http from 'http';
+import { initCronJobs } from './modules/operations/operations.cron';
 
 const server = http.createServer(app);
 
 server.listen(env.PORT, () => {
   console.log(`🚀 Server running on port ${env.PORT} in ${env.NODE_ENV} mode`);
+  initCronJobs();
 });
 
 // Graceful Shutdown Handler
