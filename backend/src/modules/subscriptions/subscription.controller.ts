@@ -27,7 +27,7 @@ export const getSubscriptions = async (req: Request, res: Response, next: NextFu
 export const getSubscription = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const subscription = await subscriptionRepository.findSubscriptionById(BigInt(id));
+    const subscription = await subscriptionRepository.findSubscriptionById(BigInt(id as string));
 
     if (!subscription) {
       return next(new AppError('Subscription not found', 404));
@@ -53,7 +53,7 @@ export const updateSubscriptionStatus = async (req: Request, res: Response, next
       return next(new AppError('Invalid subscription status', 400));
     }
 
-    const subscription = await subscriptionRepository.findSubscriptionById(BigInt(id));
+    const subscription = await subscriptionRepository.findSubscriptionById(BigInt(id as string));
     if (!subscription) {
       return next(new AppError('Subscription not found', 404));
     }
@@ -68,7 +68,7 @@ export const updateSubscriptionStatus = async (req: Request, res: Response, next
       }
     }
 
-    const updated = await subscriptionRepository.updateSubscriptionStatus(BigInt(id), status);
+    const updated = await subscriptionRepository.updateSubscriptionStatus(BigInt(id as string), status);
 
     res.status(200).json({
       status: 'success',

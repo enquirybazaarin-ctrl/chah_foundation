@@ -95,7 +95,7 @@ export default function CertificatesPage() {
                     {cert.donation?.donation_number || '—'}
                   </TableCell>
                   <TableCell>
-                    {cert.donation?.donor ? donorFullName(cert.donation.donor.first_name, cert.donation.donor.last_name, false) : '—'}
+                    {cert.donation?.donor ? donorFullName(cert.donation.donor.first_name, cert.donation.donor.last_name || '', false) : '—'}
                   </TableCell>
                   <TableCell className="font-semibold text-gray-900">
                     {cert.donation ? formatCurrency(Number(cert.donation.amount)) : '—'}

@@ -7,8 +7,12 @@ export const requirePermission = (action: string, resource: string) => {
       return next(new AppError('You are not logged in. Please log in to get access.', 401));
     }
 
-    const hasPermission = req.user.permissions.some(
-      p => p.action === action && p.resource === resource
+    if (req.user.role?.name === 'SUPER_ADMIN') {
+      return next();
+    }
+
+    const hasPermission = req.user.permissions?.some(
+      (p: any) => p.action === action && p.resource === resource
     );
 
     if (!hasPermission) {
