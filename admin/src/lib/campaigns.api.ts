@@ -80,3 +80,61 @@ export async function getCampaignCategories(): Promise<CampaignCategory[]> {
   );
   return res.data.data;
 }
+
+// ─── Featured Section Settings ───────────────────────────────────────────────
+
+export async function getFeaturedCampaignSectionAdmin(): Promise<{
+  featured: Campaign | null;
+  supporting: Campaign[];
+  section: { badge: string; heading: string; subheading: string };
+}> {
+  const res = await api.get<{
+    success: boolean;
+    data: {
+      featured: Campaign | null;
+      supporting: Campaign[];
+      section: { badge: string; heading: string; subheading: string };
+    };
+  }>('/api/v1/campaigns/featured-section');
+  return res.data.data;
+}
+
+export async function updateFeaturedCampaignSectionSettings(settings: {
+  badge?: string;
+  heading?: string;
+  subheading?: string;
+}): Promise<{ badge: string; heading: string; subheading: string }> {
+  const res = await api.put<{
+    success: boolean;
+    data: { section: { badge: string; heading: string; subheading: string } };
+  }>('/api/v1/campaigns/featured-section/settings', settings);
+  return res.data.data.section;
+}
+
+export async function getMedicalEmergencySectionAdmin(): Promise<{
+  featured: Campaign | null;
+  supporting: Campaign[];
+  section: { badge: string; heading: string; subheading: string };
+}> {
+  const res = await api.get<{
+    success: boolean;
+    data: {
+      featured: Campaign | null;
+      supporting: Campaign[];
+      section: { badge: string; heading: string; subheading: string };
+    };
+  }>('/api/v1/campaigns/medical-section');
+  return res.data.data;
+}
+
+export async function updateMedicalEmergencySectionSettings(settings: {
+  badge?: string;
+  heading?: string;
+  subheading?: string;
+}): Promise<{ badge: string; heading: string; subheading: string }> {
+  const res = await api.put<{
+    success: boolean;
+    data: { section: { badge: string; heading: string; subheading: string } };
+  }>('/api/v1/campaigns/medical-section/settings', settings);
+  return res.data.data.section;
+}

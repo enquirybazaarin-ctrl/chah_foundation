@@ -9,12 +9,7 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-4">
             <Link href="/" className="flex items-center space-x-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <span className="font-heading font-bold">C</span>
-              </div>
-              <span className="font-heading text-lg font-bold tracking-tight text-foreground">
-                CHAH Foundation
-              </span>
+              <img src="/mainlogo.webp" alt="CHAH Foundation" className="h-20 md:h-24 w-auto object-contain brightness-0 invert" />
             </Link>
             <p className="text-sm leading-relaxed">
               Empowering communities, providing relief, and creating a sustainable future for all. Join our mission today.

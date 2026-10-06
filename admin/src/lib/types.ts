@@ -102,6 +102,10 @@ export interface Campaign {
   category_id: string;
   title: string;
   slug: string;
+  short_description?: string | null;
+  beneficiary_name?: string | null;
+  beneficiary_age?: number | null;
+  location?: string | null;
   target_amount: string | null; // DECIMAL as string
   raised_amount: string;         // DECIMAL as string
   status: CampaignStatus;
@@ -109,27 +113,73 @@ export interface Campaign {
   end_date: string | null;
   content?: string;              // Omitted in list responses, present in detail
   featured_image_id: string | null;
+  featured_image_url?: string | null;
+  is_featured: boolean;
+  is_urgent: boolean;
+  urgency_label?: string | null;
+  cta_button_text?: string | null;
+  sort_order: number;
+  supporters_count: number;
   created_at: string;
   updated_at: string;
   category?: CampaignCategory;
+  featured_image?: Media | null;
 }
 
 export interface CreateCampaignPayload {
   title: string;
   category_id: string;
+  short_description?: string;
+  beneficiary_name?: string;
+  beneficiary_age?: number;
+  location?: string;
   target_amount?: number;
+  raised_amount?: number;
   start_date?: string;
   end_date?: string;
   content: string;
+  featured_image_id?: string;
+  featured_image_url?: string;
+  is_featured?: boolean;
+  is_urgent?: boolean;
+  urgency_label?: string;
+  cta_button_text?: string;
+  sort_order?: number;
+  supporters_count?: number;
 }
 
 export interface UpdateCampaignPayload {
   title?: string;
   category_id?: string;
+  short_description?: string | null;
+  beneficiary_name?: string | null;
+  beneficiary_age?: number | null;
+  location?: string | null;
   target_amount?: number | null;
+  raised_amount?: number;
   start_date?: string | null;
   end_date?: string | null;
   content?: string;
+  featured_image_id?: string | null;
+  featured_image_url?: string | null;
+  is_featured?: boolean;
+  is_urgent?: boolean;
+  urgency_label?: string | null;
+  cta_button_text?: string;
+  sort_order?: number;
+  supporters_count?: number;
+}
+
+export interface FeaturedCampaignSectionSettings {
+  badge: string;
+  heading: string;
+  subheading: string;
+}
+
+export interface FeaturedCampaignSectionResponse {
+  featured: Campaign | null;
+  supporting: Campaign[];
+  section: FeaturedCampaignSectionSettings;
 }
 
 export interface CampaignQueryParams {
@@ -343,4 +393,105 @@ export interface AuditLogQueryParams {
   limit?: number;
   entity_type?: string;
   action?: string;
+}
+
+// ─── Hero Slide ──────────────────────────────────────────────────────────
+
+export interface HeroSlide {
+  id: string;
+  tag: string | null;
+  title: string;
+  highlight: string | null;
+  description: string | null;
+  image_url: string;
+  media_id: string | null;
+  primary_button_text: string | null;
+  primary_button_url: string | null;
+  secondary_button_text: string | null;
+  secondary_button_url: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  media?: Media | null;
+}
+
+export interface CreateHeroSlidePayload {
+  tag?: string;
+  title: string;
+  highlight?: string;
+  description?: string;
+  image_url: string;
+  media_id?: string | number;
+  primary_button_text?: string;
+  primary_button_url?: string;
+  secondary_button_text?: string;
+  secondary_button_url?: string;
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+export interface UpdateHeroSlidePayload {
+  tag?: string;
+  title?: string;
+  highlight?: string;
+  description?: string;
+  image_url?: string;
+  media_id?: string | number | null;
+  primary_button_text?: string;
+  primary_button_url?: string;
+  secondary_button_text?: string;
+  secondary_button_url?: string;
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+// ─── What We Do ──────────────────────────────────────────────────────────
+
+export interface WhatWeDoSectionSettings {
+  badge: string;
+  heading: string;
+  subheading: string;
+}
+
+export interface WhatWeDoCard {
+  id: string;
+  title: string;
+  badge: string | null;
+  icon_type: 'essentials' | 'health' | 'kids' | 'animals' | string;
+  accent_color: string | null;
+  description: string;
+  images: string[];
+  cta_text: string | null;
+  cta_link: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateWhatWeDoCardPayload {
+  title: string;
+  badge?: string;
+  icon_type?: string;
+  accent_color?: string;
+  description: string;
+  images: string[];
+  cta_text?: string;
+  cta_link?: string;
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+export interface UpdateWhatWeDoCardPayload {
+  title?: string;
+  badge?: string;
+  icon_type?: string;
+  accent_color?: string;
+  description?: string;
+  images?: string[];
+  cta_text?: string;
+  cta_link?: string;
+  sort_order?: number;
+  is_active?: boolean;
 }

@@ -8,9 +8,18 @@ import { createProjectSchema, updateProjectSchema, projectQuerySchema, createAct
 const router = Router();
 
 // Public routes
+router.get('/impact-section', projectController.getImpactSectionData);
 router.get('/', validateRequest(projectQuerySchema), projectController.getProjects);
 router.get('/slug/:slug', projectController.getProjectBySlug);
 router.get('/:id', projectController.getProjectById);
+
+// Protected routes (Settings)
+router.patch(
+  '/impact-section',
+  protect,
+  requirePermission('update', 'projects'),
+  projectController.updateImpactSectionSettings
+);
 
 // Protected routes (Projects)
 router.post(

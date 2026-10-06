@@ -60,3 +60,27 @@ export const deleteMetric = async (req: Request, res: Response, next: NextFuncti
     next(error);
   }
 };
+
+export const getSectionData = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await metricService.getSectionData();
+    res.status(200).json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateSectionData = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const section = await metricService.updateSectionData(req.body);
+    res.status(200).json({
+      success: true,
+      data: { section }
+    });
+  } catch (error) {
+    next(error);
+  }
+};

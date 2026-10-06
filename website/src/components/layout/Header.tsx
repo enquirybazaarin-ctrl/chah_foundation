@@ -40,16 +40,8 @@ export function Header() {
       <div className="h-20 w-full bg-white/95 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-4 sm:px-6 lg:px-12 relative">
         
         {/* Logo */}
-        <Link href="/" className="flex items-center space-x-2 py-2 z-50">
-          <div className="flex items-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0033A0] text-white">
-              <span className="font-heading font-bold text-2xl">C</span>
-            </div>
-            <div className="ml-2 flex flex-col">
-              <span className="font-heading text-[#0033A0] text-xl font-bold leading-none tracking-tight">Children's</span>
-              <span className="font-heading text-[#0033A0] text-sm font-bold leading-none">Help & Helpage</span>
-            </div>
-          </div>
+        <Link href="/" className="flex items-center space-x-2 h-full z-50">
+          <img src="/mainlogo.webp" alt="CHAH Foundation" className="h-16 lg:h-20 w-auto object-contain transform scale-110 lg:scale-[1.35] origin-left transition-transform" />
         </Link>
 
         {/* Desktop Navigation */}

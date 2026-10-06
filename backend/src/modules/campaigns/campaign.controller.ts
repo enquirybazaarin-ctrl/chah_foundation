@@ -82,3 +82,39 @@ export const cancelCampaign = async (req: Request, res: Response, next: NextFunc
     next(error);
   }
 };
+
+export const getFeaturedSection = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await campaignService.getFeaturedSectionData();
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateFeaturedSectionSettings = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const section = await campaignService.updateFeaturedSectionSettings(req.body);
+    res.status(200).json({ success: true, data: { section } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMedicalSection = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await campaignService.getMedicalSectionData();
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateMedicalSectionSettings = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const section = await campaignService.updateMedicalSectionSettings(req.body);
+    res.status(200).json({ success: true, data: { section } });
+  } catch (error) {
+    next(error);
+  }
+};

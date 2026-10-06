@@ -94,6 +94,12 @@ apiRouter.use('/impact-metrics', metricRoutes);
 import cmsRoutes from './modules/cms/cms.routes';
 apiRouter.use('/cms', cmsRoutes);
 
+import heroSlideRoutes from './modules/hero-slides/hero-slide.routes';
+apiRouter.use('/hero-slides', heroSlideRoutes);
+
+import whatWeDoRoutes from './modules/what-we-do/what-we-do.routes';
+apiRouter.use('/what-we-do', whatWeDoRoutes);
+
 import operationsRoutes from './modules/operations/operations.routes';
 apiRouter.use('/operations', operationsRoutes);
 

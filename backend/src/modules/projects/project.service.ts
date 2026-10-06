@@ -3,6 +3,7 @@ import { CreateProjectInput, UpdateProjectInput, CreateActivityInput, UpdateActi
 import { AppError } from '../../utils/errors';
 import slugify from 'slugify';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { prisma } from '../../lib/prisma';
 
 export class ProjectService {
   private generateSlug(title: string): string {
@@ -91,6 +92,58 @@ export class ProjectService {
     }
 
     await projectRepository.deleteActivity(activityId);
+  }
+
+  async getImpactSectionData() {
+    const setting = await prisma.setting.findUnique({
+      where: { setting_key: 'impact_section_settings' }
+    });
+
+    let section = {
+      badge: "OUR IMPACT",
+      heading: "Real work. Real communities. Real change.",
+      subheading: "Explore some of the initiatives we have carried out with communities and the people we serve."
+    };
+
+    if (setting) {
+      section = JSON.parse(setting.setting_value);
+    }
+
+    const projects = await prisma.project.findMany({
+      where: { status: 'ACTIVE', is_published: true },
+      orderBy: { sort_order: 'asc' },
+      take: 4,
+      include: {
+        featured_image: true
+      }
+    });
+
+    // Format the projects properly for the frontend
+    const formattedProjects = projects.map(p => ({
+      ...p,
+      id: p.id.toString(),
+      featured_image_url: p.featured_image?.url || p.featured_image_url
+    }));
+
+    const featured = formattedProjects.find(p => p.is_featured) || formattedProjects[0] || null;
+    const supporting = featured 
+      ? formattedProjects.filter(p => p.id !== featured.id).slice(0, 2)
+      : formattedProjects.slice(1, 3);
+
+    return {
+      section,
+      featured,
+      supporting
+    };
+  }
+
+  async updateImpactSectionSettings(data: any) {
+    const setting = await prisma.setting.upsert({
+      where: { setting_key: 'impact_section_settings' },
+      update: { setting_value: JSON.stringify(data) },
+      create: { setting_key: 'impact_section_settings', setting_value: JSON.stringify(data) }
+    });
+    return JSON.parse(setting.setting_value);
   }
 }
 

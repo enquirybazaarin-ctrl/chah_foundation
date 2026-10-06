@@ -8,10 +8,18 @@ import { createMetricSchema, updateMetricSchema } from './metric.validation';
 const router = Router();
 
 // Public routes
+router.get('/section', metricController.getSectionData);
 router.get('/', metricController.getMetrics);
 router.get('/:id', metricController.getMetricById);
 
 // Protected routes
+router.patch(
+  '/section',
+  protect,
+  requirePermission('update', 'metrics'), // Or a CMS permission
+  metricController.updateSectionData
+);
+
 router.post(
   '/',
   protect,

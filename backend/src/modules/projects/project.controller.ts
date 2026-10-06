@@ -125,3 +125,27 @@ export const deleteActivity = async (req: Request, res: Response, next: NextFunc
     next(error);
   }
 };
+
+export const getImpactSectionData = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await projectService.getImpactSectionData();
+    res.status(200).json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateImpactSectionSettings = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const section = await projectService.updateImpactSectionSettings(req.body);
+    res.status(200).json({
+      success: true,
+      data: { section }
+    });
+  } catch (error) {
+    next(error);
+  }
+};

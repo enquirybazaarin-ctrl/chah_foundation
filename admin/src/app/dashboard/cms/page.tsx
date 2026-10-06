@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText, Tag, FolderOpen, Plus, Trash2, Image as ImageIcon } from 'lucide-react';
+import { FileText, Tag, FolderOpen, Plus, Trash2, Image as ImageIcon, Sparkles, HeartHandshake, Target, Activity } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import {
@@ -106,12 +106,47 @@ export default function CmsIndexPage() {
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Content Management</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Manage blog posts, categories, and tags for the CHAH Foundation website.
+          Manage blog posts, categories, hero slides, and homepage campaign sections for the CHAH Foundation website.
         </p>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <QuickAction
+          icon={<Sparkles className="h-6 w-6 text-emerald-600" />}
+          title="Hero Sliders"
+          description="Homepage banners & CTA slides"
+          href="/dashboard/cms/hero-slides"
+          ctaLabel="Manage Slides"
+        />
+        <QuickAction
+          icon={<HeartHandshake className="h-6 w-6 text-[#005e2d]" />}
+          title="What We Do"
+          description="Cause cards & image sliders"
+          href="/dashboard/cms/what-we-do"
+          ctaLabel="Manage Causes"
+        />
+        <QuickAction
+          icon={<Target className="h-6 w-6 text-amber-600" />}
+          title="Featured Campaigns"
+          description="Urgent needs section & hero card"
+          href="/dashboard/campaigns"
+          ctaLabel="Manage Campaigns"
+        />
+        <QuickAction
+          icon={<Activity className="h-6 w-6 text-lime-600" />}
+          title="Our Endeavour"
+          description="Homepage impact metrics and stats"
+          href="/dashboard/cms/our-endeavour"
+          ctaLabel="Manage Metrics"
+        />
+        <QuickAction
+          icon={<Target className="h-6 w-6 text-indigo-600" />}
+          title="Impact Projects"
+          description="Past projects section settings"
+          href="/dashboard/cms/impact-projects"
+          ctaLabel="Manage Settings"
+        />
         <QuickAction
           icon={<FileText className="h-6 w-6 text-blue-600" />}
           title="Blog Posts"

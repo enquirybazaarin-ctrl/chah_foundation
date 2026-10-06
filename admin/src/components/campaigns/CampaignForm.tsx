@@ -46,8 +46,26 @@ export function CampaignForm({
   // Form state
   const [title, setTitle] = useState(initialData?.title ?? '');
   const [categoryId, setCategoryId] = useState(initialData?.category_id ?? '');
+  const [shortDescription, setShortDescription] = useState(initialData?.short_description ?? '');
+  const [beneficiaryName, setBeneficiaryName] = useState(initialData?.beneficiary_name ?? '');
+  const [beneficiaryAge, setBeneficiaryAge] = useState(
+    initialData?.beneficiary_age ? String(initialData.beneficiary_age) : ''
+  );
+  const [location, setLocation] = useState(initialData?.location ?? '');
   const [targetAmount, setTargetAmount] = useState(
     initialData?.target_amount ? String(parseFloat(initialData.target_amount)) : ''
+  );
+  const [raisedAmount, setRaisedAmount] = useState(
+    initialData?.raised_amount ? String(parseFloat(initialData.raised_amount)) : ''
+  );
+  const [featuredImageUrl, setFeaturedImageUrl] = useState(initialData?.featured_image_url ?? '');
+  const [isFeatured, setIsFeatured] = useState(initialData?.is_featured ?? false);
+  const [isUrgent, setIsUrgent] = useState(initialData?.is_urgent ?? false);
+  const [urgencyLabel, setUrgencyLabel] = useState(initialData?.urgency_label ?? '');
+  const [ctaButtonText, setCtaButtonText] = useState(initialData?.cta_button_text ?? 'Help Now');
+  const [sortOrder, setSortOrder] = useState(initialData?.sort_order ? String(initialData.sort_order) : '0');
+  const [supportersCount, setSupportersCount] = useState(
+    initialData?.supporters_count ? String(initialData.supporters_count) : '0'
   );
   const [startDate, setStartDate] = useState(
     initialData?.start_date ? initialData.start_date.slice(0, 16) : ''
@@ -157,9 +175,21 @@ export function CampaignForm({
     const payload: CreateCampaignPayload = {
       title: title.trim(),
       category_id: categoryId,
+      short_description: shortDescription.trim() || undefined,
+      beneficiary_name: beneficiaryName.trim() || undefined,
+      beneficiary_age: beneficiaryAge ? Number(beneficiaryAge) : undefined,
+      location: location.trim() || undefined,
+      target_amount: targetAmount ? Number(targetAmount) : undefined,
+      raised_amount: raisedAmount ? Number(raisedAmount) : 0,
+      featured_image_url: featuredImageUrl.trim() || undefined,
+      is_featured: isFeatured,
+      is_urgent: isUrgent,
+      urgency_label: urgencyLabel.trim() || undefined,
+      cta_button_text: ctaButtonText.trim() || 'Help Now',
+      sort_order: sortOrder ? Number(sortOrder) : 0,
+      supporters_count: supportersCount ? Number(supportersCount) : 0,
       content: finalContent,
     };
-    if (targetAmount) payload.target_amount = Number(targetAmount);
     if (startDate) payload.start_date = new Date(startDate).toISOString();
     if (endDate) payload.end_date = new Date(endDate).toISOString();
 
@@ -188,7 +218,7 @@ export function CampaignForm({
           id="campaign-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g. Clean Water for Rural Communities"
+          placeholder="e.g. Help Amit continue his education"
           maxLength={255}
           disabled={isSubmitting}
           aria-describedby="campaign-title-error"
@@ -225,7 +255,100 @@ export function CampaignForm({
         )}
       </div>
 
-      {/* Target Amount + Dates Row */}
+      {/* Beneficiary Details & Short Need Story */}
+      <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-blue-950">Beneficiary & Need Story (Homepage Conversion)</h3>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className={labelClass}>Child / Beneficiary Name</label>
+            <Input
+              value={beneficiaryName}
+              onChange={(e) => setBeneficiaryName(e.target.value)}
+              placeholder="e.g. Amit"
+              disabled={isSubmitting}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Age</label>
+            <Input
+              type="number"
+              min={1}
+              max={100}
+              value={beneficiaryAge}
+              onChange={(e) => setBeneficiaryAge(e.target.value)}
+              placeholder="e.g. 10"
+              disabled={isSubmitting}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Location</label>
+            <Input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g. Sitapur, Uttar Pradesh"
+              disabled={isSubmitting}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className={labelClass}>Short Need Summary (1–2 lines)</label>
+          <textarea
+            rows={2}
+            className="w-full text-sm rounded-md border border-gray-300 bg-white p-2.5 focus:border-blue-500 focus:outline-none"
+            value={shortDescription}
+            onChange={(e) => setShortDescription(e.target.value)}
+            placeholder="e.g. Amit needs support for his school fees and essential learning materials to stay in school."
+            disabled={isSubmitting}
+          />
+        </div>
+      </div>
+
+      {/* Cover Image & Media */}
+      <div>
+        <label className={labelClass}>Cover Photo (Natural Real Photo 4:3 ratio)</label>
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <Input
+              value={featuredImageUrl}
+              onChange={(e) => setFeaturedImageUrl(e.target.value)}
+              placeholder="Image URL (e.g. https://images.unsplash.com/...)"
+              disabled={isSubmitting}
+            />
+            <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-2 text-xs font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 flex-shrink-0">
+              <UploadCloud className="w-4 h-4" />
+              Upload
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={isSubmitting || isUploading}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setIsUploading(true);
+                  try {
+                    const media = await uploadMedia(file);
+                    setFeaturedImageUrl(media.url);
+                  } catch {
+                    alert('Upload failed');
+                  } finally {
+                    setIsUploading(false);
+                  }
+                }}
+              />
+            </label>
+          </div>
+          {featuredImageUrl && (
+            <div className="relative w-40 h-28 rounded-lg overflow-hidden border border-gray-200">
+              <img src={featuredImageUrl} alt="Cover preview" className="w-full h-full object-cover" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Target Amount, Raised Amount & Supporters Count */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
         <div>
           <label htmlFor="campaign-target" className={labelClass}>
@@ -238,13 +361,107 @@ export function CampaignForm({
             step={1}
             value={targetAmount}
             onChange={(e) => setTargetAmount(e.target.value)}
-            placeholder="e.g. 500000"
+            placeholder="e.g. 8000"
             disabled={isSubmitting}
           />
-          <p className={helpClass}>Leave blank for unlimited</p>
-          {fieldErrors.targetAmount && <p className={errorClass}>{fieldErrors.targetAmount}</p>}
         </div>
 
+        <div>
+          <label className={labelClass}>Raised Amount (INR)</label>
+          <Input
+            type="number"
+            min={0}
+            step={1}
+            value={raisedAmount}
+            onChange={(e) => setRaisedAmount(e.target.value)}
+            placeholder="e.g. 3200"
+            disabled={isSubmitting}
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Supporters Count</label>
+          <Input
+            type="number"
+            min={0}
+            step={1}
+            value={supportersCount}
+            onChange={(e) => setSupportersCount(e.target.value)}
+            placeholder="e.g. 12"
+            disabled={isSubmitting}
+          />
+        </div>
+      </div>
+
+      {/* Homepage Feature & Urgency Controls */}
+      <div className="bg-emerald-50/50 border border-emerald-100 rounded-lg p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-emerald-950">Homepage Visibility & Urgency Controls</h3>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex items-center gap-2 pt-1">
+            <input
+              type="checkbox"
+              id="is_featured_cb"
+              checked={isFeatured}
+              onChange={(e) => setIsFeatured(e.target.checked)}
+              className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor="is_featured_cb" className="text-sm font-medium text-gray-900 cursor-pointer">
+              🌟 Highlight as Large Featured Card
+            </label>
+          </div>
+
+          <div className="flex items-center gap-2 pt-1">
+            <input
+              type="checkbox"
+              id="is_urgent_cb"
+              checked={isUrgent}
+              onChange={(e) => setIsUrgent(e.target.checked)}
+              className="w-4 h-4 rounded text-red-600 focus:ring-red-500"
+            />
+            <label htmlFor="is_urgent_cb" className="text-sm font-medium text-gray-900 cursor-pointer">
+              🔥 Urgent Campaign
+            </label>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className={labelClass}>Urgency Label (Optional)</label>
+            <Input
+              value={urgencyLabel}
+              onChange={(e) => setUrgencyLabel(e.target.value)}
+              placeholder="e.g. 5 days left"
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>CTA Button Text</label>
+            <Input
+              value={ctaButtonText}
+              onChange={(e) => setCtaButtonText(e.target.value)}
+              placeholder="e.g. Help Amit"
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Display Sort Order</label>
+            <Input
+              type="number"
+              min={0}
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+              placeholder="1"
+              disabled={isSubmitting}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Dates */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div>
           <label htmlFor="campaign-start" className={labelClass}>
             Start Date
