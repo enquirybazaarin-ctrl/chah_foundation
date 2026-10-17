@@ -14,7 +14,7 @@ module.exports = {
       max_memory_restart: '300M',
       env: {
         NODE_ENV: 'production',
-        PORT: 5000,
+        PORT: 44000,
         UV_THREADPOOL_SIZE: '2',
       },
     },
@@ -32,7 +32,7 @@ module.exports = {
       max_memory_restart: '300M',
       env: {
         NODE_ENV: 'production',
-        PORT: 3000,
+        PORT: 43000,
         HOSTNAME: '0.0.0.0',
         UV_THREADPOOL_SIZE: '2',
       },
@@ -51,7 +51,7 @@ module.exports = {
       max_memory_restart: '300M',
       env: {
         NODE_ENV: 'production',
-        PORT: 3001,
+        PORT: 43001,
         HOSTNAME: '0.0.0.0',
         UV_THREADPOOL_SIZE: '2',
       },
