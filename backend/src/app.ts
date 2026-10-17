@@ -17,7 +17,13 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" } // Allow serving images cross-origin
 }));
 
-const allowedOrigins = [env.FRONTEND_URL, env.ADMIN_CORS_ORIGIN].filter(Boolean) as string[];
+const allowedOrigins = [
+  ...(env.FRONTEND_URL ? env.FRONTEND_URL.split(',').map((s) => s.trim()) : []),
+  ...(env.ADMIN_CORS_ORIGIN ? env.ADMIN_CORS_ORIGIN.split(',').map((s) => s.trim()) : []),
+  'https://new.chahfoundation.com',
+  'https://chahfoundation.com',
+  'https://admin.chahfoundation.com',
+].filter((val, idx, arr) => Boolean(val) && arr.indexOf(val) === idx);
 const devOrigins = [...allowedOrigins, 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:3002'];
 
 app.use(cors({ 
