@@ -1,6 +1,6 @@
 import { prisma } from '../../config/database';
 import { AppError } from '../../utils/errors';
-import * as argon2 from 'argon2';
+import bcrypt from 'bcryptjs';
 
 export class UserService {
   public async getUsers(page: number, limit: number, search?: string) {
@@ -52,7 +52,7 @@ export class UserService {
     
     // Default password 'password123' if not provided
     const password = data.password || 'password123';
-    const hash = await argon2.hash(password);
+    const hash = await bcrypt.hash(password, 12);
     
     const role = await prisma.role.findUnique({ where: { name: data.role || 'ADMIN' } });
     if (!role) throw new AppError('Invalid role', 400);

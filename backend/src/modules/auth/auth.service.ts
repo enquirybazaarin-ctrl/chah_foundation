@@ -1,5 +1,5 @@
 import { prisma } from '../../config/database';
-import * as argon2 from 'argon2';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { env } from '../../config/env';
 import { AppError } from '../../utils/errors';
@@ -38,7 +38,7 @@ export const loginUser = async (email: string, password: string, ip?: string, us
     throw new AppError('Invalid email or password', 401);
   }
 
-  const isValid = await argon2.verify(user.password_hash, password);
+  const isValid = await bcrypt.compare(password, user.password_hash);
 
   if (!isValid) {
     await prisma.auditLog.create({
@@ -130,10 +130,10 @@ export const updatePassword = async (userId: bigint, oldPassword: string, newPas
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new AppError('User not found', 404);
 
-  const isValid = await argon2.verify(user.password_hash, oldPassword);
+  const isValid = await bcrypt.compare(oldPassword, user.password_hash);
   if (!isValid) throw new AppError('Invalid old password', 400);
 
-  const newHash = await argon2.hash(newPassword);
+  const newHash = await bcrypt.hash(newPassword, 12);
   await prisma.user.update({ where: { id: userId }, data: { password_hash: newHash } });
 };
 
@@ -141,7 +141,7 @@ export const adminResetPassword = async (adminId: bigint, targetUserId: bigint, 
   const user = await prisma.user.findUnique({ where: { id: targetUserId } });
   if (!user) throw new AppError('User not found', 404);
 
-  const newHash = await argon2.hash(newPassword);
+  const newHash = await bcrypt.hash(newPassword, 12);
   await prisma.user.update({ where: { id: targetUserId }, data: { password_hash: newHash } });
   
   await prisma.auditLog.create({
@@ -187,6 +187,6 @@ export const resetPassword = async (email: string, token: string, newPassword: s
     throw new AppError('Invalid or expired token', 400);
   }
 
-  const newHash = await argon2.hash(newPassword);
+  const newHash = await bcrypt.hash(newPassword, 12);
   await prisma.user.update({ where: { id: user.id }, data: { password_hash: newHash } });
 };

@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import * as argon2 from 'argon2';
+import bcrypt from 'bcryptjs';
 import slugify from 'slugify';
 import { z } from 'zod';
 import * as dotenv from 'dotenv';
@@ -92,7 +92,7 @@ async function main() {
   }
 
   // Create or Update Super Admin User
-  const password_hash = await argon2.hash(SEED_ADMIN_PASSWORD);
+  const password_hash = await bcrypt.hash(SEED_ADMIN_PASSWORD, 12);
   await prisma.user.upsert({
     where: { email: SEED_ADMIN_EMAIL },
     update: {
