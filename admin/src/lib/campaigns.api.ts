@@ -138,3 +138,63 @@ export async function updateMedicalEmergencySectionSettings(settings: {
   }>('/api/v1/campaigns/medical-section/settings', settings);
   return res.data.data.section;
 }
+
+// ─── Eldercare Section Settings ───────────────────────────────────────────────
+
+export async function getEldercareSectionAdmin(): Promise<{
+  featured: Campaign | null;
+  supporting: Campaign[];
+  section: { badge: string; heading: string; subheading: string };
+}> {
+  const res = await api.get<{
+    success: boolean;
+    data: {
+      featured: Campaign | null;
+      supporting: Campaign[];
+      section: { badge: string; heading: string; subheading: string };
+    };
+  }>('/api/v1/campaigns/eldercare-section');
+  return res.data.data;
+}
+
+export async function updateEldercareSectionSettings(settings: {
+  badge?: string;
+  heading?: string;
+  subheading?: string;
+}): Promise<{ badge: string; heading: string; subheading: string }> {
+  const res = await api.put<{
+    success: boolean;
+    data: { section: { badge: string; heading: string; subheading: string } };
+  }>('/api/v1/campaigns/eldercare-section/settings', settings);
+  return res.data.data.section;
+}
+
+// ─── Food Section Settings ───────────────────────────────────────────────
+
+export async function getFoodSectionAdmin(): Promise<{
+  featured: Campaign | null;
+  supporting: Campaign[];
+  section: { badge: string; heading: string; subheading: string };
+}> {
+  const res = await api.get<{
+    success: boolean;
+    data: {
+      featured: Campaign | null;
+      supporting: Campaign[];
+      section: { badge: string; heading: string; subheading: string };
+    };
+  }>('/api/v1/campaigns/food-section');
+  return res.data.data;
+}
+
+export async function updateFoodSectionSettings(settings: {
+  badge?: string;
+  heading?: string;
+  subheading?: string;
+}): Promise<{ badge: string; heading: string; subheading: string }> {
+  const res = await api.put<{
+    success: boolean;
+    data: { section: { badge: string; heading: string; subheading: string } };
+  }>('/api/v1/campaigns/food-section/settings', settings);
+  return res.data.data.section;
+}

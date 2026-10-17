@@ -135,10 +135,7 @@ export default function HeroSlidesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim()) {
-      toast.error('Title is required');
-      return;
-    }
+    // Title is now optional
     if (!formData.image_url.trim()) {
       toast.error('Image URL is required');
       return;
@@ -417,13 +414,12 @@ export default function HeroSlidesPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-1">
-                    Main Title <span className="text-red-500">*</span>
+                    Main Title
                   </label>
                   <Input
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="e.g. A child is waiting for your"
-                    required
                     className="text-sm"
                   />
                 </div>

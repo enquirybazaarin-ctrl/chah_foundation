@@ -1,0 +1,122 @@
+name: CHAH Foundation CI/CD Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build & Validate All Applications
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            website/package-lock.json
+            admin/package-lock.json
+
+      # 1. Build Backend
+      - name: Install & Build Backend
+        run: |
+          cd backend
+          npm ci
+          npx prisma generate
+          npm run build
+        env:
+          DATABASE_URL: "mysql://root:test@localhost:3306/chah_test"
+          JWT_SECRET: "mock_jwt_secret_must_be_32_characters_long_for_test"
+          ADMIN_CORS_ORIGIN: "https://admin.chahfoundation.com"
+          FRONTEND_URL: "https://chahfoundation.com"
+          RAZORPAY_KEY_ID: "rzp_test_placeholder"
+          RAZORPAY_KEY_SECRET: "placeholder"
+          RAZORPAY_WEBHOOK_SECRET: "placeholder"
+
+      # 2. Build Website (Frontend)
+      - name: Install & Build Website
+        run: |
+          cd website
+          npm ci
+          npm run build
+        env:
+          NEXT_PUBLIC_API_URL: "https://api.chahfoundation.com"
+
+      # 3. Build Admin Portal
+      - name: Install & Build Admin
+        run: |
+          cd admin
+          npm ci
+          npm run build
+        env:
+          NEXT_PUBLIC_API_URL: "https://api.chahfoundation.com"
+
+  deploy-to-hostinger:
+    name: Deploy to Hostinger via SSH
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Deploy using SSH only if HOSTINGER_SSH_HOST is configured in GitHub Secrets
+      - name: Execute Remote Deploy on Hostinger
+        uses: appleboy/ssh-action@v1.0.3
+        if: "${{ env.HOSTINGER_SSH_HOST != '' }}"
+        env:
+          HOSTINGER_SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+        with:
+          host: ${{ secrets.HOSTINGER_SSH_HOST }}
+          username: ${{ secrets.HOSTINGER_SSH_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          password: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
+          port: ${{ secrets.HOSTINGER_SSH_PORT || 65002 }}
+          script: |
+            echo "🚀 Starting Deployment on Hostinger..."
+            if [ -d "chah_foundation" ]; then
+              cd chah_foundation
+              git pull origin main
+            else
+              git clone https://github.com/${{ github.repository }}.git chah_foundation
+              cd chah_foundation
+            fi
+
+            # Deploy Backend
+            echo "📦 Deploying Backend..."
+            cd backend
+            npm install --production=false
+            npx prisma generate
+            npx prisma migrate deploy
+            npm run build
+            cd ..
+
+            # Deploy Website
+            echo "📦 Deploying Website..."
+            cd website
+            npm install
+            npm run build
+            cd ..
+
+            # Deploy Admin
+            echo "📦 Deploying Admin..."
+            cd admin
+            npm install
+            npm run build
+            cd ..
+
+            # Restart Services (PM2 or touch restart)
+            echo "🔄 Restarting Node Services..."
+            if command -v pm2 &> /dev/null; then
+              pm2 restart all || pm2 start ecosystem.config.js
+            fi
+            echo "✅ Deployment Finished Successfully!"

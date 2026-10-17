@@ -1,5 +1,6 @@
 export interface SendEmailPayload {
   to: string;
+  recipientName?: string;
   templateId: string;
   variables: Record<string, any>;
   relatedEntityType?: string;

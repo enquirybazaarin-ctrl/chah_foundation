@@ -39,7 +39,7 @@ interface HeroSliderProps {
 }
 
 export function HeroSlider({ slides: propSlides }: HeroSliderProps = {}) {
-  const activeSlides = (propSlides && propSlides.length > 0 ? propSlides : DEFAULT_SLIDES).map(slide => {
+  const activeSlides = (propSlides || []).map(slide => {
     // Check if this is one of the dummy seed slides from the backend
     if (
       slide.title?.includes("A child is waiting") || 
@@ -58,6 +58,10 @@ export function HeroSlider({ slides: propSlides }: HeroSliderProps = {}) {
     }
     return slide;
   });
+
+  if (activeSlides.length === 0) {
+    return null;
+  }
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
@@ -79,7 +83,7 @@ export function HeroSlider({ slides: propSlides }: HeroSliderProps = {}) {
   const prevSlide = () => setCurrent((prev) => (prev - 1 + activeSlides.length) % activeSlides.length);
 
   return (
-    <section className="relative overflow-hidden h-[85vh] min-h-[600px] w-full flex items-center justify-center bg-black">
+    <section className="relative overflow-hidden aspect-[1920/800] sm:aspect-auto sm:h-[70vh] sm:min-h-[500px] lg:h-[85vh] lg:min-h-[600px] w-full flex items-center justify-center bg-black">
       {/* Backgrounds */}
       {activeSlides.map((slide, index) => {
         const bgImg = slide.image_url || slide.img || DEFAULT_SLIDES[0].image_url!;
@@ -91,25 +95,22 @@ export function HeroSlider({ slides: propSlides }: HeroSliderProps = {}) {
               index === current ? "opacity-100" : "opacity-0 pointer-events-none"
             )}
           >
-            <div className="absolute inset-0 bg-black/60 z-10" />
             <img 
               src={bgImg} 
-              alt={slide.title} 
-              className="object-cover w-full h-full"
+              alt={slide.title || "Hero banner"} 
+              className="object-contain sm:object-cover w-full h-full"
             />
           </div>
         );
       })}
 
-      <div className="container relative z-20 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center text-white h-full flex flex-col justify-center">
+      <div className="container relative z-20 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center text-white h-full flex flex-col justify-end pb-3 sm:pb-24 md:pb-36 pointer-events-none">
         {/* Relative wrapper for the content */}
-        <div className="relative h-64 sm:h-72 w-full max-w-4xl mx-auto flex items-center justify-center">
+        <div className="relative h-full sm:h-64 md:h-72 w-full max-w-4xl mx-auto flex items-center justify-center pointer-events-auto">
           {activeSlides.map((slide, index) => {
             const desc = slide.description || slide.desc;
-            const primaryBtnText = slide.primary_button_text || "Donate Now";
-            const primaryBtnUrl = slide.primary_button_url || "/donate";
-            const secondaryBtnText = slide.secondary_button_text || "See Real Impact";
-            const secondaryBtnUrl = slide.secondary_button_url || "/campaigns";
+            const hasText = Boolean(slide.tag || slide.title || desc);
+            if (!hasText) return null;
 
             return (
               <div 
@@ -120,36 +121,23 @@ export function HeroSlider({ slides: propSlides }: HeroSliderProps = {}) {
                 )}
               >
                 {slide.tag && (
-                  <div className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs sm:text-sm font-medium text-white mb-6 backdrop-blur-md">
-                    <span className="flex h-2 w-2 rounded-full bg-[#A3E635] mr-2 flex-shrink-0" />
+                  <div className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 sm:px-4 sm:py-1.5 text-[10px] sm:text-sm font-medium text-white mb-1.5 sm:mb-6 backdrop-blur-md">
+                    <span className="flex h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-[#A3E635] mr-1.5 sm:mr-2 shrink-0" />
                     <span className="truncate">{slide.tag}</span>
                   </div>
                 )}
                 
-                <h1 className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-4 drop-shadow-md">
-                  {slide.title} {slide.highlight && <><br className="hidden md:block" /><span className="text-[#A3E635] drop-shadow-sm ml-2 md:ml-0">{slide.highlight}</span></>}
-                </h1>
+                {slide.title && (
+                  <h1 className="font-heading text-lg sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-1 sm:mb-4 drop-shadow-md">
+                    {slide.title} {slide.highlight && <><br className="hidden md:block" /><span className="text-[#A3E635] drop-shadow-sm ml-2 md:ml-0">{slide.highlight}</span></>}
+                  </h1>
+                )}
                 
                 {desc && (
-                  <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto leading-relaxed drop-shadow">
+                  <p className="text-xs sm:text-base md:text-lg lg:text-xl text-white/90 mb-2 sm:mb-8 max-w-2xl mx-auto leading-relaxed drop-shadow line-clamp-2 sm:line-clamp-none">
                     {desc}
                   </p>
                 )}
-                
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                  {primaryBtnText && (
-                    <Link href={primaryBtnUrl} className={cn(buttonVariants({ size: "lg" }), "bg-[#A3E635] hover:bg-[#86c822] text-[#1A1A1A] font-bold w-full sm:w-auto text-base h-14 px-8 rounded-full shadow-lg hover:-translate-y-0.5 transition-all btn-wave border-none")}>
-                      <Heart className="mr-2 h-5 w-5 fill-current" />
-                      {primaryBtnText}
-                    </Link>
-                  )}
-                  {secondaryBtnText && (
-                    <Link href={secondaryBtnUrl} className={cn(buttonVariants({ size: "lg", variant: "outline" }), "w-full sm:w-auto text-base h-14 px-8 rounded-full bg-white/10 border-white/30 text-white hover:bg-white/20 transition-all backdrop-blur-sm")}>
-                      {secondaryBtnText}
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </Link>
-                  )}
-                </div>
               </div>
             );
           })}
@@ -162,27 +150,27 @@ export function HeroSlider({ slides: propSlides }: HeroSliderProps = {}) {
           <button 
             onClick={prevSlide} 
             aria-label="Previous slide"
-            className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 rounded-full bg-black/30 hover:bg-black/60 text-white backdrop-blur-sm border border-white/10 transition-all"
+            className="absolute left-1 sm:left-4 lg:left-6 top-1/2 -translate-y-1/2 z-30 p-1 sm:p-2.5 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-sm border border-white/15 transition-all"
           >
-            <ChevronLeft className="h-6 w-6 sm:h-8 sm:w-8" />
+            <ChevronLeft className="h-3.5 w-3.5 sm:h-6 sm:w-6" />
           </button>
           <button 
             onClick={nextSlide} 
             aria-label="Next slide"
-            className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 rounded-full bg-black/30 hover:bg-black/60 text-white backdrop-blur-sm border border-white/10 transition-all"
+            className="absolute right-1 sm:right-4 lg:right-6 top-1/2 -translate-y-1/2 z-30 p-1 sm:p-2.5 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-sm border border-white/15 transition-all"
           >
-            <ChevronRight className="h-6 w-6 sm:h-8 sm:w-8" />
+            <ChevronRight className="h-3.5 w-3.5 sm:h-6 sm:w-6" />
           </button>
 
           {/* Pagination Dots */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex space-x-3">
+          <div className="absolute bottom-2 sm:bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 z-30 flex space-x-1.5 sm:space-x-3">
             {activeSlides.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrent(index)}
                 className={cn(
-                  "h-2 rounded-full transition-all duration-300",
-                  current === index ? "w-8 bg-[#A3E635]" : "w-2 bg-white/50 hover:bg-white/80"
+                  "h-1 sm:h-2 rounded-full transition-all duration-300",
+                  current === index ? "w-4 sm:w-8 bg-[#A3E635]" : "w-1 sm:w-2 bg-white/50 hover:bg-white/80"
                 )}
                 aria-label={`Go to slide ${index + 1}`}
               />

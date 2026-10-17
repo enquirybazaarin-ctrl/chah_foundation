@@ -263,18 +263,33 @@ export interface ProjectActivity {
   updated_at: string;
 }
 
+export interface ProjectGalleryImageItem {
+  id: string;
+  media_id?: string | null;
+  url: string;
+  caption?: string | null;
+  alt_text?: string | null;
+}
+
 export interface Project {
   id: string; // BigInt serialized as string
   title: string;
   slug: string;
   description: string | null;
+  short_description?: string | null;
+  category?: string | null;
+  location?: string | null;
+  beneficiary_info?: string | null;
+  impact_summary?: string | null;
   status: ProjectStatus;
   start_date: string | null;
   end_date: string | null;
   featured_image_id: string | null;
+  featured_image_url?: string | null;
   created_at: string;
   updated_at: string;
   activities?: ProjectActivity[];
+  gallery_images?: ProjectGalleryImageItem[];
 }
 
 export interface ProjectQueryParams {
@@ -286,7 +301,15 @@ export interface ProjectQueryParams {
 export interface CreateProjectPayload {
   title: string;
   slug?: string;
+  category?: string;
+  location?: string;
+  short_description?: string;
+  beneficiary_info?: string;
+  impact_summary?: string;
   description?: string;
+  featured_image_id?: number | string | null;
+  featured_image_url?: string | null;
+  gallery_media_ids?: number[];
   status?: ProjectStatus;
   start_date?: string;
   end_date?: string;
@@ -295,7 +318,15 @@ export interface CreateProjectPayload {
 export interface UpdateProjectPayload {
   title?: string;
   slug?: string;
+  category?: string | null;
+  location?: string | null;
+  short_description?: string | null;
+  beneficiary_info?: string | null;
+  impact_summary?: string | null;
   description?: string | null;
+  featured_image_id?: number | string | null;
+  featured_image_url?: string | null;
+  gallery_media_ids?: number[];
   status?: ProjectStatus;
   start_date?: string | null;
   end_date?: string | null;
@@ -495,3 +526,34 @@ export interface UpdateWhatWeDoCardPayload {
   sort_order?: number;
   is_active?: boolean;
 }
+
+// ─── Know About Us ────────────────────────────────────────────────────────
+
+export interface KnowAboutUsData {
+  badge: string;
+  heading: string;
+  heading_highlight: string;
+  subheading: string;
+  body: string;
+  quote: string;
+  primary_button_text: string;
+  primary_button_url: string;
+  secondary_button_text: string;
+  secondary_button_url: string;
+  images: string[];
+}
+
+export interface UpdateKnowAboutUsPayload {
+  badge?: string;
+  heading?: string;
+  heading_highlight?: string;
+  subheading?: string;
+  body?: string;
+  quote?: string;
+  primary_button_text?: string;
+  primary_button_url?: string;
+  secondary_button_text?: string;
+  secondary_button_url?: string;
+  images?: string[];
+}
+

@@ -4,9 +4,10 @@ import type { ImpactProjectsSectionData, ProjectItem } from "@/lib/api";
 
 interface ImpactProjectsSectionProps {
   data?: ImpactProjectsSectionData | null;
+  hideHeader?: boolean;
 }
 
-export function ImpactProjectsSection({ data }: ImpactProjectsSectionProps) {
+export function ImpactProjectsSection({ data, hideHeader }: ImpactProjectsSectionProps) {
   if (!data) return null;
 
   const { section, featured, supporting } = data;
@@ -16,24 +17,26 @@ export function ImpactProjectsSection({ data }: ImpactProjectsSectionProps) {
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="mb-12 text-center flex flex-col items-center">
-          <div className="flex justify-center mb-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-50 border border-lime-200/80">
-              <span className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
-              <span className="text-[12px] font-bold tracking-[0.14em] text-lime-600 uppercase">
-                {section.badge || "OUR IMPACT"}
-              </span>
+        {!hideHeader && (
+          <div className="mb-12 text-center flex flex-col items-center">
+            <div className="flex justify-center mb-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-50 border border-lime-200/80">
+                <span className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
+                <span className="text-[12px] font-bold tracking-[0.14em] text-lime-600 uppercase">
+                  {section.badge || "OUR IMPACT"}
+                </span>
+              </div>
             </div>
+            <h2 className="font-heading text-3xl md:text-5xl lg:text-[42px] font-bold text-[#003399] tracking-tight leading-tight max-w-4xl">
+              {section.heading}
+            </h2>
+            {section.subheading && (
+              <p className="mt-4 text-base md:text-lg text-gray-600 leading-relaxed max-w-3xl">
+                {section.subheading}
+              </p>
+            )}
           </div>
-          <h2 className="font-heading text-3xl md:text-5xl lg:text-[42px] font-bold text-gray-950 tracking-tight leading-tight max-w-4xl">
-            {section.heading}
-          </h2>
-          {section.subheading && (
-            <p className="mt-4 text-base md:text-lg text-gray-600 leading-relaxed max-w-3xl">
-              {section.subheading}
-            </p>
-          )}
-        </div>
+        )}
 
         {/* Projects Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -58,7 +61,7 @@ export function ImpactProjectsSection({ data }: ImpactProjectsSectionProps) {
                   </span>
                 )}
                 
-                <h3 className="font-heading text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 group-hover:text-lime-600 transition-colors">
+                <h3 className="font-heading text-2xl md:text-3xl lg:text-4xl font-bold text-[#003399] mb-4 group-hover:text-[#95c718] transition-colors">
                   <Link href={featured.cta_link || `/projects/${featured.slug}`}>
                     {featured.title}
                   </Link>
@@ -114,7 +117,7 @@ export function ImpactProjectsSection({ data }: ImpactProjectsSectionProps) {
                   </span>
                 )}
                 
-                <h4 className="font-heading text-xl md:text-2xl font-bold text-gray-900 mb-3 group-hover:text-lime-600 transition-colors line-clamp-2">
+                <h4 className="font-heading text-xl md:text-2xl font-bold text-[#003399] mb-3 group-hover:text-[#95c718] transition-colors line-clamp-2">
                   <Link href={project.cta_link || `/projects/${project.slug}`}>
                     {project.title}
                   </Link>

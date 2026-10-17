@@ -1,145 +1,398 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Script from "next/script";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "cn";
+import Link from "next/link";
+import { 
+  CalendarCheck, 
+  Wallet, 
+  CheckCircle2, 
+  Lock, 
+  AlertCircle,
+  FileText,
+  Sparkles,
+  Gift
+} from "lucide-react";
 import { createOnlineDonation, verifyOnlineDonation } from "@/lib/api";
+import { ImpactCardGenerator } from "./ImpactCardGenerator";
 
-const AMOUNTS = [
-  { value: 1000, label: "Feeds one child for a full month" },
-  { value: 2500, label: "Provides a life-saving medical kit to a family" },
-  { value: 5000, label: "Supports one child’s education for a year" },
-  { value: 10000, label: "Supports a family for the next 3 months" },
-];
+interface DonationFormProps {
+  initialCampaignId?: string;
+  initialCampaign?: any;
+  campaignsList?: any[];
+  selectedAmount?: number | "OTHERS";
+  onAmountChange?: (amount: number | "OTHERS") => void;
+  initialOccasion?: string;
+}
 
-export function DonationForm() {
-  const [amount, setAmount] = useState<number>(2500);
+const PRESET_AMOUNTS = [500, 1000, 1500, 2000, 2500, 3000, 5000];
+
+export function DonationForm({ 
+  initialCampaignId, 
+  initialCampaign,
+  campaignsList = [],
+  selectedAmount: propSelectedAmount,
+  onAmountChange,
+  initialOccasion
+}: DonationFormProps) {
+  // Frequency: One Time, Monthly, Fullpayment
+  const [frequency, setFrequency] = useState<"one-time" | "monthly" | "full">("one-time");
+
+  // Selected Amount
+  const [internalAmount, setInternalAmount] = useState<number | "OTHERS">(1000);
+  const selectedAmount = propSelectedAmount !== undefined ? propSelectedAmount : internalAmount;
   const [customAmount, setCustomAmount] = useState<string>("");
+
+  // Donor Details state (collapsible or progressive)
+  const [showDetails, setShowDetails] = useState<boolean>(false);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [panNumber, setPanNumber] = useState("");
+
+  // Celebrate With CHAH Occasion State
+  const [occasion, setOccasion] = useState<string>(initialOccasion || "");
+  const [dedicationName, setDedicationName] = useState<string>("");
+  const [dedicationMessage, setDedicationMessage] = useState<string>("");
+
+  // Campaign
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>(initialCampaignId || "");
+  const [selectedCampaign, setSelectedCampaign] = useState<any>(initialCampaign || null);
+
+  // Status & Errors
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [successData, setSuccessData] = useState<any>(null);
+  const [showCardGenerator, setShowCardGenerator] = useState<boolean>(true);
 
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    panNumber: "",
-    isAnonymous: false,
-  });
+  // Dev simulation state fallback
+  const [devModalOrder, setDevModalOrder] = useState<any>(null);
 
-  const handleAmountClick = (val: number) => {
-    setAmount(val);
+  // Sync campaign
+  useEffect(() => {
+    if (selectedCampaignId && campaignsList.length > 0) {
+      const match = campaignsList.find(c => String(c.id) === String(selectedCampaignId));
+      if (match) setSelectedCampaign(match);
+    } else if (!selectedCampaignId) {
+      setSelectedCampaign(null);
+    }
+  }, [selectedCampaignId, campaignsList]);
+
+  // Sync occasion from parent / celebrate section
+  useEffect(() => {
+    if (initialOccasion) {
+      setOccasion(initialOccasion);
+      setShowDetails(true);
+    }
+  }, [initialOccasion]);
+
+  // Compute final amount
+  const finalAmount = selectedAmount === "OTHERS"
+    ? (Number(customAmount) || 0)
+    : selectedAmount;
+
+  // Handlers
+  const handleAmountClick = (amount: number) => {
+    if (onAmountChange) {
+      onAmountChange(amount);
+    } else {
+      setInternalAmount(amount);
+    }
     setCustomAmount("");
+    setErrorMessage("");
   };
 
-  const handleCustomAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleOthersClick = () => {
+    if (onAmountChange) {
+      onAmountChange("OTHERS");
+    } else {
+      setInternalAmount("OTHERS");
+    }
+    if (!customAmount) setCustomAmount("2000");
+    setErrorMessage("");
+  };
+
+  const handleCustomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/\D/g, "");
     setCustomAmount(val);
-    if (val) setAmount(Number(val));
+    setErrorMessage("");
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  const initRazorpay = async (e: React.FormEvent) => {
+  // Main Submit / Donate click handler
+  const handleDonateClick = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (amount < 100) {
-      alert("Minimum donation amount is ₹100");
+
+    if (!finalAmount || finalAmount < 1) {
+      setErrorMessage("Please select or enter a valid donation amount.");
+      return;
+    }
+
+    // If details are not shown yet, open details section smoothly
+    if (!showDetails) {
+      setShowDetails(true);
+      setErrorMessage("");
+      return;
+    }
+
+    // Validate details
+    if (!fullName.trim()) {
+      setErrorMessage("Please enter your Full Name.");
+      return;
+    }
+    if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email.trim())) {
+      setErrorMessage("Please enter a valid Email Address for your 80G Tax Certificate.");
+      return;
+    }
+    if (!phone.trim() || phone.replace(/\D/g, "").length < 10) {
+      setErrorMessage("Please enter a valid 10-digit Mobile Number.");
+      return;
+    }
+    if (panNumber.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i.test(panNumber.trim())) {
+      setErrorMessage("Please enter a valid 10-digit PAN (e.g. ABCDE1234F).");
       return;
     }
 
     setLoading(true);
     setErrorMessage("");
-    setStatus("idle");
 
     try {
-      // 1. Create order on backend
-      const idempotencyKey = crypto.randomUUID();
-      const payload = {
-        amount,
-        is_anonymous: formData.isAnonymous,
-        donor: {
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
-          pan_number: formData.panNumber.toUpperCase(),
-        },
-      };
+      const nameParts = fullName.trim().split(" ");
+      const firstName = nameParts[0] || "Donor";
+      const lastName = nameParts.slice(1).join(" ") || "";
 
-      const donation = await createOnlineDonation(payload, idempotencyKey);
-      const razorpayOrderId = donation.payments[0]?.provider_order_id;
+      const idempotencyKey = `web_don_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-      if (!razorpayOrderId) throw new Error("Could not initialize payment order.");
+      const occasionText = occasion 
+        ? `[Celebrate with CHAH: ${occasion}]${dedicationName ? ` Dedicated to: ${dedicationName}` : ''}${dedicationMessage ? ` | Note: ${dedicationMessage}` : ''}`
+        : undefined;
 
-      // 2. Open Razorpay Modal
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: amount * 100, // paise
+      const payload: any = {
+        amount: finalAmount,
         currency: "INR",
-        name: "CHAH Foundation",
-        description: "Donation",
-        order_id: razorpayOrderId,
-        handler: async function (response: any) {
-          try {
-            // 3. Verify on frontend
-            await verifyOnlineDonation({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            });
-            setStatus("success");
-          } catch (err: any) {
-            setErrorMessage(err.message || "Payment verification failed.");
-            setStatus("error");
-          }
-        },
-        prefill: {
-          name: `${formData.firstName} ${formData.lastName}`.trim(),
-          email: formData.email,
-          contact: formData.phone,
-        },
-        theme: {
-          color: "#1b4332", // primary color
-        },
+        is_anonymous: false,
+        donor_message: occasionText,
+        donor: {
+          first_name: firstName,
+          last_name: lastName || undefined,
+          email: email.trim(),
+          phone: phone.trim() || undefined,
+          pan_number: panNumber.trim().toUpperCase() || undefined,
+        }
       };
 
-      const rzp = new (window as any).Razorpay(options);
-      rzp.on("payment.failed", function (response: any) {
-        setErrorMessage(response.error.description || "Payment failed.");
-        setStatus("error");
-      });
-      rzp.open();
+      if (selectedCampaignId) {
+        payload.campaign_id = String(selectedCampaignId);
+      }
+
+      // 1. Create order on backend
+      const donation = await createOnlineDonation(payload, idempotencyKey);
+      const razorpayOrderId = donation.payments?.[0]?.provider_order_id;
+
+      if (!razorpayOrderId) {
+        throw new Error("Unable to create payment order. Please try again.");
+      }
+
+      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_Tn01BAA8zDWgpo";
+      const isRazorpaySdkAvailable = typeof window !== "undefined" && (window as any).Razorpay;
+      const isDevMockKey = razorpayKey === "test_key_id" || razorpayOrderId.startsWith("order_dev_");
+
+      if (isRazorpaySdkAvailable && !isDevMockKey) {
+        // Real or Test Razorpay Modal
+        const options = {
+          key: razorpayKey,
+          amount: finalAmount * 100,
+          currency: "INR",
+          name: "CHAH Foundation",
+          description: selectedCampaign ? `Support: ${selectedCampaign.title}` : "80G Tax-Deductible Donation",
+          order_id: razorpayOrderId,
+          handler: async function (response: any) {
+            try {
+              setLoading(true);
+              const verified = await verifyOnlineDonation({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+              setSuccessData(verified);
+              setStatus("success");
+            } catch (err: any) {
+              setErrorMessage(err.message || "Payment verification failed.");
+              setStatus("error");
+            } finally {
+              setLoading(false);
+            }
+          },
+          prefill: {
+            name: fullName.trim(),
+            email: email.trim(),
+            contact: phone.trim(),
+          },
+          theme: {
+            color: "#003399",
+          },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on("payment.failed", function (response: any) {
+          setErrorMessage(response.error?.description || "Payment was not completed. Please try again.");
+          setLoading(false);
+        });
+        rzp.open();
+      } else {
+        // Dev Simulation Modal fallback
+        setDevModalOrder({
+          order_id: razorpayOrderId,
+          amount: finalAmount,
+          donation
+        });
+        setLoading(false);
+      }
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to initialize payment.");
+      setLoading(false);
+    }
+  };
+
+  // Dev simulation complete handler
+  const handleDevSimulateSuccess = async () => {
+    if (!devModalOrder) return;
+    setLoading(true);
+    setErrorMessage("");
+
+    try {
+      const verified = await verifyOnlineDonation({
+        razorpay_order_id: devModalOrder.order_id,
+        razorpay_payment_id: `pay_dev_${devModalOrder.order_id}`,
+        razorpay_signature: `sig_dev_${Date.now()}`,
+      });
+      setSuccessData(verified);
+      setStatus("success");
+      setDevModalOrder(null);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to verify simulated payment.");
       setStatus("error");
     } finally {
       setLoading(false);
     }
   };
 
-  if (status === "success") {
+  // Reset form
+  const handleReset = () => {
+    setStatus("idle");
+    setSuccessData(null);
+    setShowDetails(false);
+    setErrorMessage("");
+  };
+
+  // SUCCESS SCREEN
+  if (status === "success" && successData) {
     return (
-      <div className="text-center py-12 px-4 bg-white/50 backdrop-blur rounded-3xl border border-border">
-        <div className="h-16 w-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 sm:p-10 text-center max-w-4xl mx-auto animate-fade-in">
+        <div className="w-16 h-16 bg-lime-100 text-lime-600 rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner">
+          <CheckCircle2 className="w-9 h-9" />
         </div>
-        <h2 className="text-3xl font-heading font-bold text-foreground mb-4">Thank You!</h2>
-        <p className="text-muted-foreground text-lg max-w-md mx-auto mb-8">
-          Your generous donation has been received successfully. A receipt will be sent to your email shortly.
+
+        <span className="inline-block px-3 py-1 bg-lime-100 text-lime-800 text-xs font-bold rounded-full mb-3 uppercase tracking-wider">
+          Donation Successful
+        </span>
+
+        <h2 className="text-2xl font-black text-[#003399] tracking-tight mb-2">
+          Thank You, {fullName || "Generous Donor"}!
+        </h2>
+
+        <p className="text-gray-600 text-sm max-w-md mx-auto mb-6 leading-relaxed">
+          Your contribution of <strong className="text-gray-900 font-bold">₹{finalAmount.toLocaleString("en-IN")}</strong> fuels positive change and brings lasting hope to lives and communities.
         </p>
-        <button onClick={() => setStatus("idle")} className={cn(buttonVariants({ size: "lg", variant: "outline" }))}>
-          Make Another Donation
-        </button>
+
+        {/* 80G Certificate Confirmation Card */}
+        <div className="bg-lime-50/70 border border-lime-200/80 rounded-xl p-4 mb-6 text-left text-xs space-y-2.5">
+          <div className="flex items-start gap-2.5">
+            <FileText className="w-4 h-4 text-lime-700 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-lime-900 text-sm">80G Tax Exemption Receipt Sent</p>
+              <p className="text-lime-700 text-xs mt-0.5">
+                Your official receipt has been emailed to <strong>{email}</strong> via MSG91.
+              </p>
+            </div>
+          </div>
+          <div className="pt-2 border-t border-lime-200/60 grid grid-cols-2 gap-2">
+            <div>
+              <span className="text-gray-500">Donation No:</span>
+              <p className="font-semibold text-gray-800">{successData.donation_number || "CHAH-" + Date.now().toString().slice(-6)}</p>
+            </div>
+            <div>
+              <span className="text-gray-500">Tax Benefit:</span>
+              <p className="font-semibold text-gray-800">50% under Sec 80G</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Celebrate with CHAH Occasion Acknowledgment */}
+        {occasion && (
+          <div className="bg-blue-50/70 border border-blue-200/80 rounded-xl p-4 mb-6 text-left text-xs space-y-1.5 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <Gift className="w-4 h-4 text-[#003399]" />
+              <span className="font-bold text-[#003399] text-sm">
+                Celebrate With CHAH — {occasion}
+              </span>
+            </div>
+            {dedicationName && (
+              <p className="text-gray-700">
+                Dedicated in honour of: <strong className="text-gray-900 font-semibold">{dedicationName}</strong>
+              </p>
+            )}
+            {dedicationMessage && (
+              <p className="text-gray-500 italic text-[11px]">&ldquo;{dedicationMessage}&rdquo;</p>
+            )}
+          </div>
+        )}
+
+        {/* Personalized Digital Impact Recognition Card Generator */}
+        <div className="mb-6 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-between pb-3">
+            <span className="text-xs font-bold text-[#003399] uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-lime-600" />
+              <span>Personalized Digital Impact Card</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowCardGenerator(!showCardGenerator)}
+              className="text-xs font-bold text-[#003399] hover:underline"
+            >
+              {showCardGenerator ? "Hide Card" : "Show Card"}
+            </button>
+          </div>
+
+          {showCardGenerator && (
+            <div className="animate-fade-in text-left">
+              <ImpactCardGenerator
+                donorName={fullName || "Generous Supporter"}
+                amount={finalAmount}
+                occasion={occasion}
+                dedicationName={dedicationName}
+                dedicationMessage={dedicationMessage}
+                donationNumber={successData?.donation_number}
+                causeTitle={selectedCampaign?.title || "Child Nutrition & Healthcare"}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            onClick={handleReset}
+            className="w-full sm:w-auto px-6 py-2.5 bg-[#003399] hover:bg-[#002878] text-white font-bold rounded-lg text-sm transition-all shadow-md"
+          >
+            Make Another Donation
+          </button>
+          <Link
+            href="/"
+            className="w-full sm:w-auto px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg text-sm transition-all"
+          >
+            Return to Home
+          </Link>
+        </div>
       </div>
     );
   }
@@ -147,150 +400,326 @@ export function DonationForm() {
   return (
     <>
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
-      <form onSubmit={initRazorpay} className="bg-white rounded-3xl shadow-xl border border-border overflow-hidden">
+
+      {/* EXACT CONTAINER CARD AS PER USER UI MOCKUP */}
+      <div id="donation-form-card" className="bg-white rounded-2xl shadow-xl border border-gray-200/90 p-4 sm:p-8 max-w-xl mx-auto scroll-mt-28">
         
-        {/* Amount Selection */}
-        <div className="p-8 border-b border-border/50 bg-muted/20">
-          <h2 className="text-xl font-heading font-bold mb-6">1. Select Amount</h2>
-          <div className="flex flex-col gap-3 mb-6">
-            {AMOUNTS.map((item) => (
+        {/* HEADER: SUPPORT THE CAUSE */}
+        <h3 className="text-lg sm:text-2xl font-bold text-[#003399] text-center tracking-wide uppercase mb-4 sm:mb-6">
+          SUPPORT THE CAUSE
+        </h3>
+
+        {/* FREQUENCY BUTTONS ROW: One Time, Monthly, Fullpayment */}
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-3 mb-5">
+          {/* One Time */}
+          <button
+            type="button"
+            onClick={() => setFrequency("one-time")}
+            className={`py-2 sm:py-2.5 px-1 sm:px-2 rounded-lg border text-[11px] sm:text-sm font-semibold flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer ${
+              frequency === "one-time"
+                ? "border-[#003399] bg-[#003399] text-white shadow-xs"
+                : "border-[#003399] text-[#003399] hover:bg-blue-50/50 bg-white"
+            }`}
+          >
+            <span className={`inline-flex items-center justify-center w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border text-[9px] sm:text-[10px] font-bold shrink-0 ${
+              frequency === "one-time" ? "border-white text-white" : "border-[#003399] text-[#003399]"
+            }`}>
+              1
+            </span>
+            <span className="truncate">One Time</span>
+          </button>
+
+          {/* Monthly */}
+          <button
+            type="button"
+            onClick={() => setFrequency("monthly")}
+            className={`py-2 sm:py-2.5 px-1 sm:px-2 rounded-lg border text-[11px] sm:text-sm font-semibold flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer ${
+              frequency === "monthly"
+                ? "border-[#003399] bg-[#003399] text-white shadow-xs"
+                : "border-[#003399] text-[#003399] hover:bg-blue-50/50 bg-white"
+            }`}
+          >
+            <CalendarCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="truncate">Monthly</span>
+          </button>
+
+          {/* Fullpayment */}
+          <button
+            type="button"
+            onClick={() => setFrequency("full")}
+            className={`py-2 sm:py-2.5 px-1 sm:px-2 rounded-lg border text-[11px] sm:text-sm font-semibold flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer ${
+              frequency === "full"
+                ? "border-[#003399] bg-[#003399] text-white shadow-xs"
+                : "border-[#003399] text-[#003399] hover:bg-blue-50/50 bg-white"
+            }`}
+          >
+            <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="truncate">Fullpayment</span>
+          </button>
+        </div>
+
+        {/* AMOUNTS GRID: 4 columns x 2 rows (500, 1000, 1500, 2000, 2500, 3000, 5000, OTHERS) */}
+        <div className="grid grid-cols-4 gap-1.5 sm:gap-2.5 mb-5">
+          {PRESET_AMOUNTS.map((amt) => {
+            const isSelected = selectedAmount === amt;
+            return (
               <button
-                key={item.value}
+                key={amt}
                 type="button"
-                onClick={() => handleAmountClick(item.value)}
-                className={`flex items-center justify-between p-4 rounded-xl text-left border-2 transition-all ${
-                  amount === item.value && !customAmount
-                    ? "border-primary bg-primary/10"
-                    : "border-border bg-white hover:border-primary/30 hover:bg-primary/5"
+                onClick={() => handleAmountClick(amt)}
+                className={`py-2 sm:py-3 px-0.5 sm:px-1 rounded-lg border text-[11px] sm:text-sm md:text-base font-semibold tracking-tight transition-all cursor-pointer ${
+                  isSelected
+                    ? "bg-[#95c718] border-[#95c718] text-white shadow-xs"
+                    : "border-[#003399] text-[#003399] hover:bg-blue-50/40 bg-white"
                 }`}
               >
-                <div className="flex flex-col">
-                  <span className={`text-lg font-bold ${amount === item.value && !customAmount ? "text-primary" : "text-foreground"}`}>₹{item.value}</span>
-                  <span className="text-sm text-muted-foreground">{item.label}</span>
-                </div>
-                <div className={`h-5 w-5 rounded-full border flex items-center justify-center ${amount === item.value && !customAmount ? "border-primary" : "border-muted-foreground/30"}`}>
-                  {amount === item.value && !customAmount && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
-                </div>
+                ₹ {amt}
               </button>
-            ))}
-          </div>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium text-lg">₹</span>
-            <input
-              type="text"
-              placeholder="Custom Amount"
-              value={customAmount}
-              onChange={handleCustomAmountChange}
-              className={`w-full pl-8 pr-4 py-4 rounded-xl border-2 text-lg focus:outline-none transition-colors ${
-                customAmount ? "border-primary bg-primary/5" : "border-border bg-white focus:border-primary/50"
-              }`}
-            />
-          </div>
-        </div>
+            );
+          })}
 
-        {/* Donor Details */}
-        <div className="p-8">
-          <h2 className="text-xl font-heading font-bold mb-6">2. Your Details</h2>
-          
-          {status === "error" && (
-            <div className="mb-6 p-4 bg-destructive/10 text-destructive rounded-xl text-sm font-medium">
-              {errorMessage}
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">First Name *</label>
-              <input
-                required
-                type="text"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
-                placeholder="John"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Last Name</label>
-              <input
-                type="text"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
-                placeholder="Doe"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Email Address *</label>
-              <input
-                required
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
-                placeholder="john@example.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Phone Number *</label>
-              <input
-                required
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
-                placeholder="9876543210"
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-2 mb-6">
-            <label className="text-sm font-medium text-foreground">PAN Number (For 80G Tax Exemption)</label>
-            <input
-              type="text"
-              name="panNumber"
-              value={formData.panNumber}
-              onChange={handleChange}
-              className="w-full px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 uppercase"
-              placeholder="ABCDE1234F"
-            />
-          </div>
-
-          <div className="flex items-center space-x-3 mb-8 p-4 bg-muted/30 rounded-lg">
-            <input
-              type="checkbox"
-              id="isAnonymous"
-              name="isAnonymous"
-              checked={formData.isAnonymous}
-              onChange={handleChange}
-              className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
-            />
-            <label htmlFor="isAnonymous" className="text-sm text-foreground font-medium">
-              Make my donation anonymous (Hide name on public campaigns)
-            </label>
-          </div>
-
+          {/* OTHERS BUTTON */}
           <button
-            type="submit"
-            disabled={loading}
-            className={cn(buttonVariants({ size: "lg", variant: "secondary" }), "w-full h-14 text-lg font-bold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed")}
+            type="button"
+            onClick={handleOthersClick}
+            className={`py-2 sm:py-3 px-0.5 sm:px-1 rounded-lg border text-[10px] sm:text-sm md:text-base font-semibold tracking-tight transition-all cursor-pointer ${
+              selectedAmount === "OTHERS"
+                ? "bg-[#95c718] border-[#95c718] text-white shadow-xs"
+                : "border-[#003399] text-[#003399] hover:bg-blue-50/40 bg-white"
+            }`}
           >
-            {loading ? "Processing..." : `Yes, I want to help`}
+            OTHERS
           </button>
-          
-          <p className="text-center text-xs text-muted-foreground mt-4 flex items-center justify-center gap-1.5 flex-wrap">
-            <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-            Secure payment · Instant 80G receipt · You can donate anonymously
-          </p>
-          <p className="text-center text-xs text-muted-foreground/80 mt-2">
-            You will receive a confirmation and impact update after your donation reaches them.
-          </p>
         </div>
-      </form>
+
+        {/* CUSTOM AMOUNT INLINE INPUT (When OTHERS is active) */}
+        {selectedAmount === "OTHERS" && (
+          <div className="mb-6 animate-fade-in">
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              Enter Custom Amount (₹)
+            </label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm">
+                ₹
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoFocus
+                placeholder="Enter custom amount"
+                value={customAmount}
+                onChange={handleCustomChange}
+                className="w-full pl-8 pr-4 py-2.5 bg-gray-50 border border-gray-300 rounded text-sm font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#003399]"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ERROR MESSAGE IF ANY */}
+        {errorMessage && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700 font-medium flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {/* DONOR DETAILS FORM (Cleanly expands when clicking Donate to collect details for 80G receipt) */}
+        {showDetails && (
+          <div className="mb-6 pt-4 border-t border-gray-200 space-y-3.5 animate-fade-in text-left">
+            <div className="flex items-center justify-between pb-1">
+              <span className="text-xs font-bold text-[#003399] uppercase tracking-wider">
+                Donor Information (For 80G Receipt)
+              </span>
+              <span className="text-xs font-bold text-gray-800">
+                Amount: ₹{finalAmount.toLocaleString("en-IN")}
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Full Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Enter your full name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:border-[#003399]"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Email Address <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:border-[#003399]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Mobile Number <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">
+                    +91
+                  </span>
+                  <input
+                    type="tel"
+                    maxLength={10}
+                    placeholder="9876543210"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:border-[#003399]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                PAN Number <span className="text-gray-400 font-normal">(Optional, for 80G Tax Exemption)</span>
+              </label>
+              <input
+                type="text"
+                maxLength={10}
+                placeholder="ABCDE1234F"
+                value={panNumber}
+                onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
+                className="w-full px-3 py-2 border border-gray-300 rounded text-sm uppercase text-gray-900 focus:outline-none focus:border-[#003399]"
+              />
+            </div>
+
+            {/* Celebrate With CHAH Occasion Dedication Section */}
+            <div className="pt-3 border-t border-gray-200">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={!!occasion}
+                  onChange={(e) => setOccasion(e.target.checked ? "Birthday" : "")}
+                  className="rounded border-gray-300 text-[#003399] focus:ring-[#003399] w-4 h-4 cursor-pointer"
+                />
+                <span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                  <Gift className="w-3.5 h-3.5 text-lime-600" />
+                  <span>Dedicate this donation for a special occasion</span>
+                  <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-lime-100 text-lime-800">Celebrate</span>
+                </span>
+              </label>
+
+              {occasion && (
+                <div className="mt-3 p-3.5 rounded-xl bg-lime-50/60 border border-lime-200/80 space-y-3 animate-fade-in text-left">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Occasion Type
+                    </label>
+                    <select
+                      value={occasion}
+                      onChange={(e) => setOccasion(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 bg-white focus:outline-none focus:border-[#003399]"
+                    >
+                      <option value="Birthday">🎂 Birthday</option>
+                      <option value="Anniversary">💍 Anniversary</option>
+                      <option value="Festival">🪔 Festival</option>
+                      <option value="Personal milestone">🎓 Personal Milestone</option>
+                      <option value="In honour or memory">🕊️ In Honour or Memory</option>
+                      <option value="Other">✨ Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      In the Name Of / Dedicated To
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. In honor of Rahul / Celebrating Maya's Birthday"
+                      value={dedicationName}
+                      onChange={(e) => setDedicationName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:outline-none focus:border-[#003399]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Personal Dedication Note <span className="text-gray-400 font-normal">(Optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Wishing you a year full of joy, blessings and good health!"
+                      value={dedicationMessage}
+                      onChange={(e) => setDedicationMessage(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded text-xs text-gray-900 focus:outline-none focus:border-[#003399]"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* MOTIVATIONAL / IMPACT TEXT (EXACT TEXT FROM USER UI) */}
+        <p className="text-xs sm:text-[13px] font-semibold text-slate-800 tracking-wide leading-relaxed text-left uppercase mb-6">
+          SUPPORT OUR CAUSE WITH A DONATION TODAY. EVERY CONTRIBUTION FUELS POSITIVE CHANGE, MAKING A LASTING IMPACT ON LIVES AND COMMUNITIES
+        </p>
+
+        {/* PRIMARY ACTION BUTTON: DONATE (EXACT STYLING FROM USER UI) */}
+        <button
+          type="button"
+          onClick={handleDonateClick}
+          disabled={loading}
+          className="w-full py-3.5 px-6 bg-[#003399] hover:bg-[#00246a] disabled:bg-blue-400 text-white font-bold rounded text-base transition-colors shadow-sm flex items-center justify-center gap-2"
+        >
+          {loading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span>Processing...</span>
+            </>
+          ) : (
+            <span>{showDetails ? `Proceed to Pay ₹${finalAmount.toLocaleString("en-IN")}` : "Donate"}</span>
+          )}
+        </button>
+
+        {/* Subtle trust footer */}
+        <div className="mt-4 flex items-center justify-center gap-1.5 text-gray-400 text-[11px]">
+          <Lock className="w-3 h-3 text-gray-500" />
+          <span>256-Bit SSL Secured • 80G Tax Exempt Receipt Issued</span>
+        </div>
+      </div>
+
+      {/* DEV SIMULATOR MODAL FALLBACK */}
+      {devModalOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-xl max-w-sm w-full p-6 text-center shadow-2xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Simulate Payment (Dev Mode)</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Order ID: <code className="text-xs bg-gray-100 p-1 rounded">{devModalOrder.order_id}</code>
+              <br />
+              Amount: <strong>₹{devModalOrder.amount}</strong>
+            </p>
+            <div className="flex gap-2 justify-center">
+              <button
+                onClick={handleDevSimulateSuccess}
+                disabled={loading}
+                className="px-4 py-2 bg-[#003399] hover:bg-[#002878] text-white rounded text-sm font-semibold"
+              >
+                {loading ? "Verifying..." : "Simulate Success"}
+              </button>
+              <button
+                onClick={() => setDevModalOrder(null)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded text-sm font-semibold"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

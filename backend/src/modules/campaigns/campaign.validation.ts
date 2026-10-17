@@ -79,3 +79,19 @@ export const updateMedicalSectionSettingsSchema = z.object({
     subheading: z.string().max(1000).optional(),
   }),
 });
+
+export const updateEldercareSectionSettingsSchema = z.object({
+  body: z.object({
+    badge: z.string().max(100).optional(),
+    heading: z.string().max(255).optional(),
+    subheading: z.string().max(1000).optional(),
+  }),
+});
+
+export const updateFoodSectionSettingsSchema = z.object({
+  body: z.object({
+    badge: z.string().max(100).optional(),
+    heading: z.string().max(255).optional(),
+    subheading: z.string().max(1000).optional(),
+  }),
+});

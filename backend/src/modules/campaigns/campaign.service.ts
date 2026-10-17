@@ -186,6 +186,41 @@ export class CampaignService {
     return campaignRepository.updateMedicalSectionSettings(settings);
   }
 
+  public async getCategorySectionData(prefix: string, defaultBadge: string, defaultHeading: string, defaultSubheading: string, categorySlug: string): Promise<FeaturedSectionResponse> {
+    const catExists = await prisma.campaignCategory.findFirst({ where: { slug: categorySlug } });
+    if (!catExists) {
+      await prisma.campaignCategory.create({
+        data: {
+          name: categorySlug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+          slug: categorySlug,
+          description: `${categorySlug} campaigns`,
+        },
+      });
+    }
+
+    const [activeCampaigns, section] = await Promise.all([
+      campaignRepository.findCategorySectionCampaigns(categorySlug, 4),
+      campaignRepository.getCategorySectionSettings(prefix, defaultBadge, defaultHeading, defaultSubheading),
+    ]);
+
+    const mapped = activeCampaigns.map((c) => this.mapResponse(c));
+    const featured = mapped.find((c) => c.is_featured) || mapped[0] || null;
+    const supporting = mapped.filter((c) => c.id !== featured?.id).slice(0, 3);
+
+    return {
+      featured,
+      supporting,
+      section,
+    };
+  }
+
+  public async updateCategorySectionSettings(
+    prefix: string,
+    settings: Partial<FeaturedCampaignSectionSettings>
+  ): Promise<FeaturedCampaignSectionSettings> {
+    return campaignRepository.updateCategorySectionSettings(prefix, settings);
+  }
+
   public async createCampaign(
     data: CreateCampaignDTO, 
     auditContext: { actorUserId?: bigint; ipAddress?: string }
@@ -208,7 +243,7 @@ export class CampaignService {
               beneficiary_age: data.beneficiary_age,
               location: data.location,
               target_amount: data.target_amount ? new Prisma.Decimal(data.target_amount) : null,
-              raised_amount: data.raised_amount ? new Prisma.Decimal(data.raised_amount) : new Prisma.Decimal(0),
+              raised_amount: new Prisma.Decimal(0),
               start_date: data.start_date ? new Date(data.start_date) : null,
               end_date: data.end_date ? new Date(data.end_date) : null,
               content: sanitizedContent,
@@ -302,7 +337,6 @@ export class CampaignService {
     if (data.beneficiary_age !== undefined) updateData.beneficiary_age = data.beneficiary_age;
     if (data.location !== undefined) updateData.location = data.location;
     if (data.target_amount !== undefined) updateData.target_amount = data.target_amount ? new Prisma.Decimal(data.target_amount) : null;
-    if (data.raised_amount !== undefined) updateData.raised_amount = new Prisma.Decimal(data.raised_amount);
     if (data.start_date !== undefined) updateData.start_date = data.start_date ? new Date(data.start_date) : null;
     if (data.end_date !== undefined) updateData.end_date = data.end_date ? new Date(data.end_date) : null;
     if (data.featured_image_id !== undefined) updateData.featured_image_id = data.featured_image_id ? BigInt(data.featured_image_id) : null;
@@ -426,6 +460,32 @@ export class CampaignService {
         alt_text: campaign.featured_image.alt_text,
       } : null,
     };
+  }
+  public async getCampaignSupporters(campaignId: bigint, limit: number) {
+    const donations = await prisma.donation.findMany({
+      where: {
+        campaign_id: campaignId,
+        status: { in: ['SUCCESS'] }
+      },
+      include: {
+        donor: true
+      },
+      orderBy: {
+        created_at: 'desc'
+      },
+      take: limit
+    });
+
+    return donations.map(d => {
+      const name = d.is_anonymous ? "Anonymous" : (d.donor.first_name + (d.donor.last_name ? " " + d.donor.last_name : ""));
+      return {
+        id: d.id.toString(),
+        name,
+        amount: d.amount.toString(),
+        initial: name.charAt(0).toUpperCase(),
+        created_at: d.created_at
+      };
+    });
   }
 }
 

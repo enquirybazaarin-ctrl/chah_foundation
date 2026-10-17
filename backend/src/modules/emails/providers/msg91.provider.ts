@@ -1,6 +1,5 @@
 import { EmailProvider } from './email-provider.interface';
 import { SendEmailPayload, ProviderSendResult } from '../email.types';
-import axios from 'axios';
 
 export class Msg91Provider implements EmailProvider {
   public async sendEmail(payload: SendEmailPayload): Promise<ProviderSendResult> {
@@ -10,47 +9,81 @@ export class Msg91Provider implements EmailProvider {
         throw new Error('MSG91_API_KEY is not configured');
       }
 
-      // MSG91 email API URL (example, verify with actual MSG91 docs)
       const url = 'https://control.msg91.com/api/v5/email/send';
 
-      const requestBody = {
-        to: [
+      const fromEmail = process.env.MSG91_FROM_EMAIL || 'info@chahfoundation.com';
+      const fromName = process.env.MSG91_FROM_NAME || 'CHILDREN\'S HELP & HELPAGE FOUNDATION';
+
+      const requestBody: Record<string, any> = {
+        template_id: payload.templateId,
+        recipients: [
           {
-            email: payload.to
+            to: [
+              {
+                name: payload.recipientName || 'Valued Donor',
+                email: payload.to
+              }
+            ],
+            variables: payload.variables
           }
         ],
         from: {
-          email: process.env.MSG91_FROM_EMAIL || 'no-reply@chahfoundation.org'
-        },
-        template_id: payload.templateId,
-        variables: payload.variables
+          name: fromName,
+          email: fromEmail
+        }
       };
 
-      const response = await axios.post(url, requestBody, {
+      if (process.env.MSG91_DOMAIN) {
+        requestBody.domain = process.env.MSG91_DOMAIN;
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
         headers: {
-          'AuthKey': apiKey,
+          'authkey': apiKey,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
-        }
+        },
+        body: JSON.stringify(requestBody)
       });
 
-      // Based on MSG91 response structure
-      if (response.data && response.data.type === 'success') {
-        return {
-          success: true,
-          messageId: response.data.message_id || `msg91_${Date.now()}`
-        };
-      } else {
+      const responseData: any = await response.json().catch(() => null);
+
+      if (response.ok) {
+        // MSG91 returns status: "success" or type: "success" or message on valid submission
+        if (
+          !responseData ||
+          responseData.status === 'success' ||
+          responseData.type === 'success' ||
+          responseData.status === 200 ||
+          responseData.status === '200' ||
+          (responseData.message && !responseData.hasError)
+        ) {
+          return {
+            success: true,
+            messageId: responseData?.data?.id || responseData?.message_id || `msg91_${Date.now()}`
+          };
+        }
+
         return {
           success: false,
-          error: response.data?.message || 'Unknown MSG91 error'
+          error: responseData?.message || responseData?.error || 'MSG91 returned an unsuccessful response status'
+        };
+      } else {
+        const errorMsg =
+          responseData?.message ||
+          responseData?.errors?.[0]?.message ||
+          `MSG91 HTTP Error: ${response.status} ${response.statusText}`;
+        return {
+          success: false,
+          error: errorMsg
         };
       }
     } catch (error: any) {
-      // Do not log payload here to avoid leaking PAN/donor details
+      // Do not log payload here to avoid leaking donor PII or financial details
       return {
         success: false,
-        error: error.response?.data?.message || error.message || 'Network error communicating with MSG91'
+        error: error.message || 'Network error communicating with MSG91'
       };
     }
   }

@@ -20,10 +20,10 @@ export async function uploadMedia(file: File): Promise<Media> {
   const formData = new FormData();
   formData.append('file', file);
   
-  const res = await api.post<{ status: string; data: Media }>('/api/v1/media', formData, {
+  const res = await api.post<{ status: string; data: { media: Media } }>('/api/v1/media', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
-  return res.data.data;
+  return res.data.data.media;
 }
 
 export async function deleteMedia(id: string): Promise<void> {

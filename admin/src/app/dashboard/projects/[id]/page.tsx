@@ -1,23 +1,58 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Plus, Trash2, Clock } from 'lucide-react';
-import { getProjectById, updateProject, createProjectActivity, deleteProjectActivity } from '@/lib/projects.api';
-import type { Project, ProjectStatus, UpdateProjectPayload, CreateProjectActivityPayload, ProjectActivity } from '@/lib/types';
+import { ArrowLeft, Save, Plus, Trash2, Clock, Upload, ImageIcon, Loader2, ExternalLink, Info } from 'lucide-react';
+import { getProjectById, updateProject, deleteProject, createProjectActivity, deleteProjectActivity } from '@/lib/projects.api';
+import { uploadMedia } from '@/lib/media.api';
+import type { Project, UpdateProjectPayload, CreateProjectActivityPayload } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/utils';
 
-export default function ProjectDetailsPage({ params }: { params: { id: string } }) {
+export const PROGRAM_CATEGORIES = [
+  'Education Support Drive',
+  'Health Support Drive',
+  'Dog Food Donation Drive',
+  'Celebrations',
+  'Blanket Donation Drive',
+  'Women Empowerment Drive',
+  'Environment Drive',
+  'Help For The Blind Drive',
+  'Old Age Support Drive',
+  'Food Distribution Outside The Hospital',
+  'Education',
+  'Healthcare',
+  'Animal Welfare',
+  'Hunger Relief',
+  'Women Empowerment',
+  'Environment',
+  'Community Welfare'
+];
+
+interface GalleryItem {
+  id: string;
+  media_id?: string | null;
+  url: string;
+}
+
+export default function ProjectDetailsPage() {
   const router = useRouter();
+  const routeParams = useParams<{ id: string }>();
+  const projectId = routeParams?.id as string;
+
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<UpdateProjectPayload>({});
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+  const [bannerId, setBannerId] = useState<string | null>(null);
+  const [galleryImages, setGalleryImages] = useState<GalleryItem[]>([]);
   
   // Timeline Activity State
   const [isAddingActivity, setIsAddingActivity] = useState(false);
@@ -28,21 +63,47 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
   });
 
   useEffect(() => {
-    loadProject();
-  }, [params.id]);
+    if (projectId) {
+      void loadProject();
+    }
+  }, [projectId]);
 
   async function loadProject() {
+    if (!projectId) return;
     try {
-      const data = await getProjectById(params.id);
+      const data = await getProjectById(projectId);
       setProject(data);
+
+      const defaultWhyHeading = data.impact_summary || (data.category ? `Why ${data.category}?` : `Why ${data.title}?`);
+
       setFormData({
         title: data.title,
         slug: data.slug,
+        category: data.category || '',
+        impact_summary: defaultWhyHeading,
+        short_description: data.short_description || '',
         description: data.description || '',
+        location: data.location || '',
+        beneficiary_info: data.beneficiary_info || '',
         status: data.status,
         start_date: data.start_date?.split('T')[0] || '',
         end_date: data.end_date?.split('T')[0] || '',
       });
+
+      setBannerUrl(data.featured_image_url || null);
+      setBannerId(data.featured_image_id || null);
+
+      if (data.gallery_images && data.gallery_images.length > 0) {
+        setGalleryImages(
+          data.gallery_images.map((g) => ({
+            id: g.id,
+            media_id: g.media_id || g.id,
+            url: g.url,
+          }))
+        );
+      } else {
+        setGalleryImages([]);
+      }
     } catch (err: any) {
       setError('Failed to load project details.');
     } finally {
@@ -53,6 +114,72 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedCategory = e.target.value;
+    setFormData((prev) => {
+      // Auto-update Why Heading when category changes
+      const updatedWhyHeading = selectedCategory ? `Why ${selectedCategory}?` : prev.impact_summary;
+      return {
+        ...prev,
+        category: selectedCategory,
+        impact_summary: updatedWhyHeading,
+      };
+    });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const files = Array.from(e.target.files);
+    setIsUploadingImages(true);
+    setError(null);
+
+    try {
+      const uploadedResults = await Promise.all(
+        files.map((file) => uploadMedia(file))
+      );
+      const newItems: GalleryItem[] = uploadedResults.map((media) => ({
+        id: media.id,
+        media_id: media.id,
+        url: media.url,
+      }));
+      setGalleryImages((prev) => [...prev, ...newItems]);
+      setSuccessMsg(`Uploaded ${newItems.length} supporting image(s). Click "Save Changes" to apply.`);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to upload image(s). Please try again.');
+    } finally {
+      setIsUploadingImages(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setGalleryImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    setIsUploadingBanner(true);
+    setError(null);
+
+    try {
+      const media = await uploadMedia(file);
+      setBannerId(media.id);
+      setBannerUrl(media.url);
+      setSuccessMsg('Banner image uploaded successfully! Click "Save Changes" to apply.');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to upload banner image.');
+    } finally {
+      setIsUploadingBanner(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveBanner = () => {
+    setBannerId(null);
+    setBannerUrl(null);
   };
 
   const handleActivityChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -67,14 +194,25 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
     setSuccessMsg(null);
 
     try {
-      const payload = {
+      const mediaIds = galleryImages
+        .map((img) => Number(img.media_id || img.id))
+        .filter((id) => !isNaN(id) && id > 0);
+
+      const payload: UpdateProjectPayload = {
         ...formData,
+        featured_image_id: bannerId ? Number(bannerId) : null,
+        impact_summary: formData.impact_summary || null,
+        short_description: formData.short_description || null,
+        description: formData.description || null,
+        category: formData.category || null,
+        location: formData.location || null,
+        beneficiary_info: formData.beneficiary_info || null,
+        gallery_media_ids: mediaIds,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
-        description: formData.description || null,
       };
 
-      const updatedProject = await updateProject(params.id, payload);
+      const updatedProject = await updateProject(projectId, payload);
       setProject(updatedProject);
       setSuccessMsg('Project updated successfully.');
     } catch (err: any) {
@@ -89,13 +227,13 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
     setError(null);
     
     try {
-      await createProjectActivity(params.id, {
+      await createProjectActivity(projectId, {
         ...activityForm,
         date: activityForm.date ? new Date(activityForm.date).toISOString() : undefined,
       });
       setIsAddingActivity(false);
       setActivityForm({ title: '', description: '', date: new Date().toISOString().split('T')[0] });
-      await loadProject(); // Reload to get fresh activities
+      await loadProject();
       setSuccessMsg('Activity added successfully.');
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Failed to add activity.');
@@ -106,11 +244,24 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
     if (!confirm('Are you sure you want to delete this activity?')) return;
     setError(null);
     try {
-      await deleteProjectActivity(params.id, activityId);
+      await deleteProjectActivity(projectId, activityId);
       await loadProject();
       setSuccessMsg('Activity deleted successfully.');
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Failed to delete activity.');
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!project) return;
+    if (!window.confirm(`Are you sure you want to delete "${project.title}"? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      await deleteProject(project.id);
+      router.push('/dashboard/projects');
+    } catch {
+      setError('Failed to delete project. Please try again.');
     }
   };
 
@@ -135,21 +286,48 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
     );
   }
 
+  // Ensure current category is in the options list
+  const allCategoryOptions = Array.from(new Set([
+    ...PROGRAM_CATEGORIES,
+    ...(formData.category ? [formData.category] : [])
+  ]));
+
   return (
     <div className="max-w-4xl space-y-8 pb-12">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/projects"
-          className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-          aria-label="Back to projects"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Edit Project</h1>
-          <p className="mt-1 text-sm text-gray-500 font-mono">
-            ID: {project.id}
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link
+            href="/dashboard/projects"
+            className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+            aria-label="Back to projects"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Edit Project</h1>
+            <p className="mt-1 text-sm text-gray-500 font-mono">
+              ID: {project.id} • Slug: /{project.slug}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <a
+            href={`http://localhost:3001/programs/${project.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+          >
+            <ExternalLink className="h-4 w-4" />
+            View Live Page
+          </a>
+          <button
+            type="button"
+            onClick={handleDeleteProject}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors cursor-pointer"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete Project
+          </button>
         </div>
       </div>
 
@@ -167,9 +345,11 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
       )}
 
       <form onSubmit={handleSubmit} className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
-        <div className="px-4 py-6 sm:p-8 space-y-6">
-          <div className="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
-            <div className="sm:col-span-4">
+        <div className="px-4 py-6 sm:p-8 space-y-8">
+
+          {/* 1. PROJECT TITLE & CATEGORY */}
+          <div className="space-y-5">
+            <div>
               <label htmlFor="title" className="block text-sm font-medium leading-6 text-gray-900">
                 Project Title <span className="text-red-500">*</span>
               </label>
@@ -179,112 +359,361 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
                   name="title"
                   id="title"
                   required
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
+                  placeholder="e.g. Education Support Drive"
+                  className="block w-full rounded-md border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm px-3"
                   value={formData.title || ''}
                   onChange={handleChange}
                 />
               </div>
             </div>
 
-            <div className="sm:col-span-2">
-              <label htmlFor="status" className="block text-sm font-medium leading-6 text-gray-900">
-                Status
+            {/* Category Dropdown - Directly below Project Title */}
+            <div>
+              <label htmlFor="category" className="block text-sm font-medium leading-6 text-gray-900">
+                Category <span className="text-red-500">*</span>
               </label>
               <div className="mt-2">
                 <select
-                  id="status"
-                  name="status"
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
-                  value={formData.status || 'PLANNED'}
-                  onChange={handleChange}
+                  id="category"
+                  name="category"
+                  required
+                  className="block w-full rounded-md border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm px-3 bg-white"
+                  value={formData.category || ''}
+                  onChange={handleCategoryChange}
                 >
-                  <option value="PLANNED">Planned</option>
-                  <option value="ACTIVE">Active</option>
-                  <option value="COMPLETED">Completed</option>
-                  <option value="ON_HOLD">On Hold</option>
+                  <option value="">-- Select Category / Program --</option>
+                  {allCategoryOptions.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
                 </select>
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Selecting a category automatically updates the &quot;Why&quot; heading below.
+              </p>
             </div>
+          </div>
 
-            <div className="col-span-full">
-              <label htmlFor="slug" className="block text-sm font-medium leading-6 text-gray-900">
-                URL Slug
-              </label>
-              <div className="mt-2">
+          {/* 2. HERO BANNER IMAGE */}
+          <div className="space-y-4 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5 text-blue-600" />
+                  Hero Banner & Project Card Cover Image
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Main banner displayed on the program page, and also serves as the cover photo for Our Impact cards on the homepage.
+                </p>
+
+                {/* Recommended Image Size Specs */}
+                <div className="bg-lime-50/80 border border-lime-200/90 rounded-xl p-2.5 flex items-start gap-2 text-xs text-lime-950 mt-2">
+                  <Info className="w-4 h-4 text-lime-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-lime-950">Recommended Image Specs: </span>
+                    <span className="font-mono font-bold text-lime-900 bg-white/90 px-1.5 py-0.5 rounded border border-lime-200">800 × 600 px</span>
+                    <span className="text-lime-800 font-medium"> (4:3 ratio) </span>
+                    <span className="text-lime-750">for homepage Our Impact cards (zero cropping on mobile and desktop), or </span>
+                    <span className="font-mono font-bold text-lime-900 bg-white/90 px-1.5 py-0.5 rounded border border-lime-200">1920 × 820 px</span>
+                    <span className="text-lime-750"> for wide public header banners.</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="banner-image-input"
+                  className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 shadow-xs cursor-pointer transition-colors ${
+                    isUploadingBanner ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {isUploadingBanner ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Uploading Banner...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4" />
+                      {bannerUrl ? 'Change Banner' : 'Upload Banner'}
+                    </>
+                  )}
+                </label>
                 <input
-                  type="text"
-                  name="slug"
-                  id="slug"
-                  required
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3 font-mono text-sm"
-                  value={formData.slug || ''}
-                  onChange={handleChange}
+                  id="banner-image-input"
+                  type="file"
+                  accept="image/*"
+                  disabled={isUploadingBanner}
+                  onChange={handleBannerUpload}
+                  className="hidden"
                 />
               </div>
             </div>
 
-            <div className="col-span-full">
+            {bannerUrl ? (
+              <div className="relative rounded-2xl overflow-hidden bg-slate-900 border border-gray-200 shadow-xs group aspect-21/9 max-h-64 sm:max-h-72">
+                <img
+                  src={bannerUrl}
+                  alt="Program Banner"
+                  className="w-full h-full object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                  <label
+                    htmlFor="banner-image-input"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/95 text-gray-900 text-xs font-semibold hover:bg-white cursor-pointer shadow-md"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    Replace Banner
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleRemoveBanner}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 cursor-pointer shadow-md"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Remove Banner
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border-2 border-dashed border-gray-200 p-8 text-center bg-gray-50/50">
+                <ImageIcon className="mx-auto h-10 w-10 text-gray-400 mb-2" />
+                <p className="text-sm font-medium text-gray-700">No custom hero banner uploaded</p>
+                <p className="text-xs text-gray-500 mt-1">Upload a high-resolution landscape photo to display as the program header banner.</p>
+              </div>
+            )}
+          </div>
+
+          {/* 3. WHY SECTION: HEADING EDIT OPTION + DESCRIPTION */}
+          <div className="space-y-4 pt-4 border-t">
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">Why Section</h2>
+              <p className="text-xs text-gray-500">Auto-filled based on selected category, and fully customizable.</p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="impact_summary" className="block text-sm font-medium leading-6 text-gray-900">
+                  Why Heading (Edit Option)
+                </label>
+                <div className="mt-2">
+                  <input
+                    type="text"
+                    name="impact_summary"
+                    id="impact_summary"
+                    placeholder="e.g. Why Education Support Drive?"
+                    className="block w-full rounded-md border-0 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm px-3 font-medium text-blue-900 bg-blue-50/30"
+                    value={formData.impact_summary || ''}
+                    onChange={handleChange}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  This heading appears on the public program page above the Why description.
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="short_description" className="block text-sm font-medium leading-6 text-gray-900">
+                  Why Description
+                </label>
+                <div className="mt-2">
+                  <textarea
+                    id="short_description"
+                    name="short_description"
+                    rows={3}
+                    placeholder="Describe the urgency and why this initiative is necessary for the community..."
+                    className="block w-full rounded-md border-0 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm px-3"
+                    value={formData.short_description || ''}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. WHAT WE DO SECTION */}
+          <div className="space-y-4 pt-4 border-t">
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">What We Do</h2>
+              <p className="text-xs text-gray-500">Detail your organization&apos;s on-ground activities and execution plan.</p>
+            </div>
+
+            <div>
               <label htmlFor="description" className="block text-sm font-medium leading-6 text-gray-900">
-                Description
+                What We Do Description
               </label>
               <div className="mt-2">
                 <textarea
                   id="description"
                   name="description"
                   rows={4}
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
+                  placeholder="Detail what activities and interventions our volunteers carry out on the ground..."
+                  className="block w-full rounded-md border-0 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm px-3"
                   value={formData.description || ''}
                   onChange={handleChange}
                 />
               </div>
             </div>
+          </div>
 
-            <div className="sm:col-span-3">
-              <label htmlFor="start_date" className="block text-sm font-medium leading-6 text-gray-900">
-                Start Date
-              </label>
-              <div className="mt-2">
+          {/* 4. SUPPORTING IMAGES (GALLERY) */}
+          <div className="space-y-4 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5 text-blue-600" />
+                  Supporting Images
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Attach on-ground photos. Only clean images are displayed without any extra caption clutter.
+                </p>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="supporting-images-input"
+                  className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 shadow-xs cursor-pointer transition-colors ${
+                    isUploadingImages ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {isUploadingImages ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4" />
+                      Upload Images
+                    </>
+                  )}
+                </label>
                 <input
-                  type="date"
-                  name="start_date"
-                  id="start_date"
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
-                  value={formData.start_date || ''}
-                  onChange={handleChange}
+                  id="supporting-images-input"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  disabled={isUploadingImages}
+                  onChange={handleImageUpload}
+                  className="hidden"
                 />
               </div>
             </div>
 
-            <div className="sm:col-span-3">
-              <label htmlFor="end_date" className="block text-sm font-medium leading-6 text-gray-900">
-                End Date
-              </label>
-              <div className="mt-2">
-                <input
-                  type="date"
-                  name="end_date"
-                  id="end_date"
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
-                  value={formData.end_date || ''}
-                  onChange={handleChange}
-                />
+            {/* Supporting Images Grid - ONLY IMAGES DISPLAYED */}
+            {galleryImages.length === 0 ? (
+              <div className="rounded-xl border-2 border-dashed border-gray-200 p-8 text-center bg-gray-50/50">
+                <ImageIcon className="mx-auto h-10 w-10 text-gray-400 mb-2" />
+                <p className="text-sm font-medium text-gray-700">No supporting images added yet</p>
+                <p className="text-xs text-gray-500 mt-1">Upload photos to showcase this program drive on the website.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pt-2">
+                {galleryImages.map((img, idx) => (
+                  <div
+                    key={`${img.id}-${idx}`}
+                    className="group relative rounded-xl overflow-hidden aspect-4/3 bg-gray-100 border border-gray-200 shadow-xs"
+                  >
+                    <img
+                      src={img.url}
+                      alt={`Supporting image ${idx + 1}`}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    {/* Delete button only */}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(idx)}
+                      className="absolute top-2 right-2 p-1.5 rounded-full bg-red-600 text-white opacity-90 hover:opacity-100 hover:bg-red-700 shadow-md transition-all cursor-pointer"
+                      title="Remove image"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 5. LOCATION, BENEFICIARY & STATUS */}
+          <div className="space-y-4 pt-4 border-t">
+            <h2 className="text-base font-semibold text-gray-900">Program Details</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div>
+                <label htmlFor="status" className="block text-sm font-medium leading-6 text-gray-900">
+                  Status
+                </label>
+                <div className="mt-2">
+                  <select
+                    id="status"
+                    name="status"
+                    className="block w-full rounded-md border-0 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm px-3 bg-white"
+                    value={formData.status || 'ACTIVE'}
+                    onChange={handleChange}
+                  >
+                    <option value="ACTIVE">Active</option>
+                    <option value="PLANNED">Planned</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="ON_HOLD">On Hold</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="location" className="block text-sm font-medium leading-6 text-gray-900">
+                  Location / Area
+                </label>
+                <div className="mt-2">
+                  <input
+                    type="text"
+                    name="location"
+                    id="location"
+                    placeholder="e.g. Pan-India across 15 States"
+                    className="block w-full rounded-md border-0 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm px-3"
+                    value={formData.location || ''}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="beneficiary_info" className="block text-sm font-medium leading-6 text-gray-900">
+                  Beneficiary Group
+                </label>
+                <div className="mt-2">
+                  <input
+                    type="text"
+                    name="beneficiary_info"
+                    id="beneficiary_info"
+                    placeholder="e.g. Underprivileged children & families"
+                    className="block w-full rounded-md border-0 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm px-3"
+                    value={formData.beneficiary_info || ''}
+                    onChange={handleChange}
+                  />
+                </div>
               </div>
             </div>
           </div>
+
         </div>
 
         <div className="flex items-center justify-end gap-x-4 border-t border-gray-900/10 px-4 py-4 sm:px-8 bg-gray-50 rounded-b-xl">
           <button
             type="submit"
-            disabled={isSubmitting}
-            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled={isSubmitting || isUploadingImages}
+            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
             {isSubmitting ? (
-              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em]" />
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Saving...
+              </>
             ) : (
-              <Save className="h-4 w-4" />
+              <>
+                <Save className="h-4 w-4" />
+                Save Changes
+              </>
             )}
-            Save Changes
           </button>
         </div>
       </form>

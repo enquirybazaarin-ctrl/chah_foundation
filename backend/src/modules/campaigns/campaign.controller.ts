@@ -118,3 +118,49 @@ export const updateMedicalSectionSettings = async (req: Request, res: Response, 
     next(error);
   }
 };
+
+export const getEldercareSection = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await campaignService.getCategorySectionData('eldercare', 'ELDER CARE', 'Support the elderly in their twilight years.', 'Help us provide food, medical care, and a dignified life to the elderly.', 'elder-care');
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateEldercareSectionSettings = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const section = await campaignService.updateCategorySectionSettings('eldercare', req.body);
+    res.status(200).json({ success: true, data: { section } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getFoodSection = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await campaignService.getCategorySectionData('food', 'FOOD & HUNGER', 'Fight hunger, save lives.', 'Your contribution can help provide nutritious meals to those struggling with hunger.', 'food-and-hunger');
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateFoodSectionSettings = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const section = await campaignService.updateCategorySectionSettings('food', req.body);
+    res.status(200).json({ success: true, data: { section } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCampaignSupporters = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 10;
+    const supporters = await campaignService.getCampaignSupporters(BigInt(req.params.id as string), limit);
+    res.status(200).json({ success: true, data: supporters });
+  } catch (error) {
+    next(error);
+  }
+};

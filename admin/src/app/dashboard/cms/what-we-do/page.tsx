@@ -21,7 +21,8 @@ import {
   GraduationCap,
   PawPrint,
   Settings2,
-  ArrowRight
+  ArrowRight,
+  Info
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
@@ -173,7 +174,9 @@ export default function WhatWeDoCMSPage() {
     setUploadingImage(true);
     try {
       const media = await uploadMedia(file);
-      handleImageChange(targetIndex, media.url);
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const fullUrl = media.url.startsWith('http') ? media.url : `${API_URL}${media.url}`;
+      handleImageChange(targetIndex, fullUrl);
       toast.success('Image uploaded successfully');
     } catch {
       toast.error('Failed to upload image');
@@ -323,6 +326,29 @@ export default function WhatWeDoCMSPage() {
         </div>
       </div>
 
+      {/* ── RECOMMENDED IMAGE SIZE GUIDANCE BANNER ── */}
+      <div className="bg-lime-50/80 border border-lime-200/90 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-lime-950 shadow-2xs">
+        <div className="flex items-start sm:items-center gap-3">
+          <div className="p-2 rounded-xl bg-lime-100 text-lime-800 border border-lime-200 shrink-0">
+            <ImageIcon className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold text-lime-900 text-sm">Recommended Card Image Specs:</span>
+              <span className="font-mono font-bold text-lime-950 bg-white/90 px-2.5 py-0.5 rounded-full border border-lime-200 shadow-2xs">
+                800 × 600 px (4:3 aspect ratio)
+              </span>
+              <span className="text-[11px] font-semibold text-lime-800 bg-lime-200/60 px-2 py-0.5 rounded-full">
+                Zero Crop Guarantee
+              </span>
+            </div>
+            <p className="text-lime-800 mt-1 text-xs leading-relaxed">
+              Uploading images with an exact <strong>4:3 aspect ratio</strong> (e.g. 800×600 px or 1200×900 px) ensures photos fit the card container edge-to-edge with <strong>no cropping</strong> on both mobile and desktop screens.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* ── SECTION SETTINGS FORM (Headline & Subtitle) ── */}
       <div className="bg-card border rounded-2xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4 border-b pb-3">
@@ -427,7 +453,8 @@ export default function WhatWeDoCMSPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
             {cards.map((card) => {
               const imagesList = Array.isArray(card.images) ? card.images : [];
-              const primaryImg = imagesList[0] || 'https://images.unsplash.com/photo-1593113580332-ce288d6168e9?q=80&w=800';
+              const rawImg = imagesList[0] || 'https://images.unsplash.com/photo-1593113580332-ce288d6168e9?q=80&w=800';
+              const primaryImg = rawImg.startsWith('http') ? rawImg : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${rawImg}`;
 
               return (
                 <div 
@@ -652,6 +679,21 @@ export default function WhatWeDoCMSPage() {
                   >
                     <Plus className="w-3.5 h-3.5" /> Add Image
                   </button>
+                </div>
+
+                {/* Recommended Image Specs Note */}
+                <div className="bg-lime-50/80 border border-lime-200/90 rounded-xl p-3 flex items-start gap-2.5 text-xs text-lime-950">
+                  <Info className="w-4 h-4 text-lime-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-lime-900">Recommended Image Size: </span>
+                    <span className="font-mono font-bold text-lime-950 bg-white/90 px-2 py-0.5 rounded border border-lime-200">
+                      800 × 600 px
+                    </span>
+                    <span className="text-lime-800 font-medium"> (4:3 aspect ratio, Max 2 MB, JPG or WebP).</span>
+                    <p className="text-lime-700 mt-0.5 text-[11px]">
+                      This exact 4:3 ratio guarantees the entire photo remains visible without edge cropping on mobile phones, tablets, and desktop displays.
+                    </p>
+                  </div>
                 </div>
 
                 {formData.images.map((img, idx) => (

@@ -4,12 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   ArrowRight, 
-  HeartHandshake, 
-  HeartPulse, 
-  GraduationCap, 
-  PawPrint,
-  ChevronLeft,
-  ChevronRight
+  CheckCircle2, 
+  Check, 
+  ChevronLeft, 
+  ChevronRight 
 } from "lucide-react";
 import { cn } from "cn";
 
@@ -101,8 +99,17 @@ export const DEFAULT_WHAT_WE_DO_ITEMS: WhatWeDoItem[] = [
   },
 ];
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+function resolveImageUrl(url?: string): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/')) return `${API_URL}${url}`;
+  return `${API_URL}/${url}`;
+}
+
 /**
- * Auto-sliding image carousel component for the top 60-70% part of each card
+ * Auto-sliding image carousel component for the card cover
  */
 function CardAutoSlider({ 
   images, 
@@ -119,7 +126,6 @@ function CardAutoSlider({
   useEffect(() => {
     if (images.length <= 1 || isPaused) return;
 
-    // Slight interval stagger between cards so they don't flip simultaneously
     const intervalTime = 3800 + (cardIndex * 400);
 
     const timer = setInterval(() => {
@@ -143,7 +149,7 @@ function CardAutoSlider({
 
   return (
     <div 
-      className="relative w-full h-40 sm:h-44 lg:h-44 xl:h-48 overflow-hidden bg-stone-100 group/slider select-none"
+      className="relative w-full h-full overflow-hidden bg-slate-100 select-none group/slider"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -151,17 +157,16 @@ function CardAutoSlider({
         <div
           key={idx}
           className={cn(
-            "absolute inset-0 transition-all duration-700 ease-in-out transform",
+            "absolute inset-0 transition-all duration-700 ease-out transform",
             idx === current ? "opacity-100 scale-100" : "opacity-0 scale-105 pointer-events-none"
           )}
         >
           <img
-            src={img}
+            src={resolveImageUrl(img)}
             alt={`${title} - image ${idx + 1}`}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10" />
         </div>
       ))}
 
@@ -187,7 +192,7 @@ function CardAutoSlider({
 
       {/* Slide Progress Dots */}
       {images.length > 1 && (
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
+        <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
           {images.map((_, idx) => (
             <button
               key={idx}
@@ -211,31 +216,6 @@ function CardAutoSlider({
   );
 }
 
-/**
- * Returns cause-specific icon component
- */
-function CauseIcon({ type, color }: { type?: string; color?: string }) {
-  const iconProps = { className: "w-3.5 h-3.5 text-white" };
-  
-  const iconMap: Record<string, React.ReactNode> = {
-    essentials: <HeartHandshake {...iconProps} />,
-    health: <HeartPulse {...iconProps} />,
-    kids: <GraduationCap {...iconProps} />,
-    animals: <PawPrint {...iconProps} />,
-  };
-
-  const selected = type ? iconMap[type] : undefined;
-
-  return (
-    <div 
-      className="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0 transition-transform duration-300 group-hover:scale-105"
-      style={{ backgroundColor: color || "#53b34b" }}
-    >
-      {selected || <HeartHandshake {...iconProps} />}
-    </div>
-  );
-}
-
 export function WhatWeDoSection({
   badge = "WHAT WE DO",
   heading = "Supporting Citizens in Need Our National Commitment",
@@ -245,33 +225,33 @@ export function WhatWeDoSection({
   const activeItems = items && items.length > 0 ? items : DEFAULT_WHAT_WE_DO_ITEMS;
 
   return (
-    <section className="py-16 md:py-24 bg-gray-50 border-y border-gray-200/50 overflow-hidden relative">
-      {/* Background soft ambient accents */}
+    <section className="py-14 md:py-20 bg-gray-50 border-y border-gray-200/50 overflow-hidden relative">
+      {/* Background ambient accents */}
       <div className="absolute top-1/4 right-0 w-80 h-80 bg-lime-400/5 rounded-full blur-3xl pointer-events-none -z-0" />
       <div className="absolute bottom-10 left-0 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl pointer-events-none -z-0" />
 
-      {/* Wider container for spacious, wider cards */}
-      <div className="container relative z-10 mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
+      <div className="container relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
-        {/* Section Heading & Subheading (Center aligned, in one single line on desktop) */}
-        <div className="text-center max-w-5xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-50 border border-lime-200/80 mb-6">
-            <span className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
-            <span className="text-[12px] font-bold tracking-[0.14em] text-lime-600 uppercase">
-              {badge}
-            </span>
+        {/* Section Heading & Subheading */}
+        <div className="mb-10 sm:mb-14 text-center flex flex-col items-center">
+          <div className="flex justify-center mb-5 sm:mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-50 border border-lime-200/80">
+              <span className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
+              <span className="text-[12px] font-bold tracking-[0.14em] text-gray-800 uppercase">
+                {badge}
+              </span>
+            </div>
           </div>
 
-          <h2 className="font-heading text-3xl md:text-4xl lg:text-[42px] font-bold text-gray-950 tracking-tight leading-tight mb-6">
+          <h2 className="font-heading text-2xl sm:text-4xl lg:text-[42px] font-bold text-[#003399] tracking-tight leading-tight max-w-4xl">
             {heading.includes("Citizens in Need") ? (
               (() => {
                 const parts = heading.split("Citizens in Need");
                 return (
                   <>
                     {parts[0]}
-                    <span className="text-lime-500 relative inline-block whitespace-nowrap">
+                    <span className="text-[#95c718] relative inline-block whitespace-nowrap">
                       Citizens in Need
-                      <span className="absolute -bottom-1 left-0 w-full h-[3px] bg-lime-400/30 rounded-full" />
                     </span>{" "}
                     <span className="whitespace-nowrap">{parts[1]?.trim()}</span>
                   </>
@@ -282,69 +262,90 @@ export function WhatWeDoSection({
             )}
           </h2>
 
-          <p className="mt-4 text-base md:text-lg text-gray-600 leading-relaxed max-w-3xl mx-auto">
-            {subheading}
-          </p>
+          {subheading && (
+            <p className="mt-3 sm:mt-4 text-sm sm:text-base md:text-lg text-gray-600 leading-relaxed max-w-3xl">
+              {subheading}
+            </p>
+          )}
         </div>
 
-        {/* 4 Cards in 1 Row in Desktop View with wider cards and compact viewport fit */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-5 items-stretch">
+        {/* 4 Cards matching Our Impact (Completed Projects) card design: Cover photo, Category badge, Title, Description, Highlight pill, Action link */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
           {activeItems.map((item, index) => {
-            const icon = (item.iconType || item.icon_type || "essentials") as any;
-            const accent = item.accentColor || item.accent_color;
+            const badgeText = item.badge || "INITIATIVE";
+            const itemImages = item.images && item.images.length > 0 
+              ? item.images 
+              : ["https://images.unsplash.com/photo-1593113580332-ce288d6168e9?q=80&w=800&auto=format&fit=crop"];
 
             return (
-              <div
+              <article
                 key={item.id || index}
-                className="group bg-white rounded-2xl border border-gray-200/75 shadow-sm hover:shadow-md hover:border-lime-300 transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                className="group flex flex-col rounded-2xl border border-slate-200/90 bg-white overflow-hidden shadow-xs hover:shadow-xl hover:border-lime-400 transition-all duration-300 hover:-translate-y-1"
               >
-                {/* ── TOP PART: Auto-Sliding Images ── */}
-                <div className="relative w-full">
+                {/* 1. Project / Cause Cover Photograph (4:3 ratio) with auto slider */}
+                <Link
+                  href={item.cta_link || "/about"}
+                  className="relative aspect-[4/3] w-full bg-slate-100 overflow-hidden block"
+                  aria-label={`View details for ${item.title}`}
+                >
                   <CardAutoSlider 
-                    images={item.images} 
+                    images={itemImages} 
                     title={item.title} 
                     cardIndex={index}
                   />
 
-                  {/* Badge Pill on Top Left */}
-                  {item.badge && (
-                    <div className="absolute top-3 left-3 z-20">
-                      <span className="bg-black/60 backdrop-blur-md text-white text-[9px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full shadow-sm">
-                        {item.badge}
-                      </span>
+                  {/* Subtle edge vignette */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-60 pointer-events-none" />
+
+                  {/* 2. Category Label over the image */}
+                  {badgeText && (
+                    <div className="absolute top-3.5 left-3.5 bg-white/95 backdrop-blur-sm text-lime-800 text-[11px] font-bold tracking-wider uppercase px-3 py-1 rounded-full shadow-xs border border-slate-100 z-20">
+                      {badgeText}
                     </div>
                   )}
-                </div>
+                </Link>
 
-                {/* ── BOTTOM PART: Icon & Main Heading in ONE line, Description, CTA ── */}
-                <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                {/* Card Editorial Content Body */}
+                <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
                   <div>
-                    {/* Icon and Main Heading together in ONE line */}
-                    <div className="flex items-center gap-3 mb-3">
-                      <CauseIcon type={icon} color={accent} />
-                      <h3 className="font-heading text-base font-bold text-gray-900 leading-snug group-hover:text-lime-500 transition-colors flex-1 line-clamp-2">
+                    {/* 3. Title with consistent typography */}
+                    <h3 className="font-heading text-lg sm:text-[19px] font-bold text-[#003399] group-hover:text-[#95c718] transition-colors line-clamp-2 leading-snug mb-2.5">
+                      <Link href={item.cta_link || "/about"} className="hover:underline">
                         {item.title}
-                      </h3>
-                    </div>
+                      </Link>
+                    </h3>
 
-                    {/* Description - full text without cut */}
-                    <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
+                    {/* 4. Short, meaningful description */}
+                    <p className="text-slate-600 text-sm leading-relaxed line-clamp-3 mb-4">
                       {item.description}
                     </p>
                   </div>
 
-                  {/* Know More CTA Link */}
-                  <div className="pt-3 border-t border-gray-100">
-                    <Link
-                      href={item.cta_link || "/about"}
-                      className="inline-flex items-center text-sm font-bold text-lime-500 hover:text-lime-600 group/link transition-colors"
-                    >
-                      <span>{item.cta_text || "Know More"}</span>
-                      <ArrowRight className="w-4 h-4 ml-1 transition-transform duration-200 group-hover/link:translate-x-1" />
-                    </Link>
+                  <div>
+                    {/* 5. Highlight / Impact pill (matching 'Why Education Support Drive?') */}
+                    <div className="mb-4 bg-lime-50/80 border border-lime-200/70 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 text-lime-900 text-xs font-semibold">
+                      <CheckCircle2 className="w-4 h-4 text-lime-600 shrink-0" />
+                      <span className="line-clamp-1">Why {item.title}?</span>
+                    </div>
+
+                    {/* 6. Subtle "Know More" link with arrow & active status */}
+                    <div className="pt-3.5 border-t border-slate-100 flex items-center justify-between">
+                      <Link
+                        href={item.cta_link || "/about"}
+                        className="inline-flex items-center gap-1.5 text-sm font-bold text-[#003399] group-hover:text-[#95c718] transition-colors"
+                      >
+                        <span>{item.cta_text || "Know More"}</span>
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </Link>
+
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                        <Check className="w-3 h-3 text-lime-600 stroke-[3]" />
+                        Active
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>

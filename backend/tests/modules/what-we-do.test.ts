@@ -55,6 +55,21 @@ describe('What We Do API', () => {
     await prisma.whatWeDoCard.deleteMany({
       where: { title: { contains: 'Test Cause Card' } },
     });
+    await prisma.setting.upsert({
+      where: { setting_key: 'what_we_do_badge' },
+      update: { setting_value: 'WHAT WE DO' },
+      create: { setting_key: 'what_we_do_badge', setting_value: 'WHAT WE DO' },
+    });
+    await prisma.setting.upsert({
+      where: { setting_key: 'what_we_do_heading' },
+      update: { setting_value: 'Supporting Citizens in Need Our National Commitment' },
+      create: { setting_key: 'what_we_do_heading', setting_value: 'Supporting Citizens in Need Our National Commitment' },
+    });
+    await prisma.setting.upsert({
+      where: { setting_key: 'what_we_do_subheading' },
+      update: { setting_value: 'We strive to do good for all, addressing the diverse needs of people, fostering positive change and lasting impact.' },
+      create: { setting_key: 'what_we_do_subheading', setting_value: 'We strive to do good for all, addressing the diverse needs of people, fostering positive change and lasting impact.' },
+    });
     await prisma.user.deleteMany({ where: { email: 'whatwedoadmin@test.com' } });
     await prisma.rolePermission.deleteMany({
       where: { role: { name: 'WHAT_WE_DO_ADMIN' } },

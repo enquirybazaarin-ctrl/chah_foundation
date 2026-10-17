@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+const imageItemSchema = z.string().min(1, 'Image path/URL cannot be empty').refine(
+  (val) => val.startsWith('/') || val.startsWith('http://') || val.startsWith('https://'),
+  'Must be a valid image URL or media path'
+);
+
 export const createWhatWeDoCardSchema = z.object({
   body: z.object({
     title: z.string().min(1, 'Title is required').max(200),
@@ -7,7 +12,7 @@ export const createWhatWeDoCardSchema = z.object({
     icon_type: z.enum(['essentials', 'health', 'kids', 'animals']).default('essentials'),
     accent_color: z.string().max(20).optional().default('#53b34b'),
     description: z.string().min(1, 'Description is required'),
-    images: z.array(z.string().url('Must be valid image URL')).min(1, 'At least 1 image is required'),
+    images: z.array(imageItemSchema).min(1, 'At least 1 image is required'),
     cta_text: z.string().max(50).optional().default('Know More'),
     cta_link: z.string().max(255).optional().default('/about'),
     sort_order: z.number().int().optional().default(0),
@@ -25,7 +30,7 @@ export const updateWhatWeDoCardSchema = z.object({
     icon_type: z.enum(['essentials', 'health', 'kids', 'animals']).optional(),
     accent_color: z.string().max(20).optional(),
     description: z.string().min(1).optional(),
-    images: z.array(z.string().url('Must be valid image URL')).min(1).optional(),
+    images: z.array(imageItemSchema).min(1).optional(),
     cta_text: z.string().max(50).optional(),
     cta_link: z.string().max(255).optional(),
     sort_order: z.number().int().optional(),

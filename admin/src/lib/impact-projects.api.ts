@@ -1,4 +1,4 @@
-import { fetchApi } from './api';
+import api from './api';
 
 export interface ImpactSectionSettings {
   badge: string;
@@ -7,14 +7,11 @@ export interface ImpactSectionSettings {
 }
 
 export async function getImpactSectionAdmin(): Promise<any> {
-  const data = await fetchApi('/api/v1/projects/impact-section');
-  return data;
+  const res = await api.get('/api/v1/projects/impact-section');
+  return res.data.data || res.data;
 }
 
 export async function updateImpactSectionSettings(settings: ImpactSectionSettings): Promise<ImpactSectionSettings> {
-  const data = await fetchApi('/api/v1/projects/impact-section', {
-    method: 'PATCH',
-    body: JSON.stringify(settings),
-  });
-  return data.section;
+  const res = await api.patch('/api/v1/projects/impact-section', settings);
+  return res.data.data?.section || res.data.section;
 }

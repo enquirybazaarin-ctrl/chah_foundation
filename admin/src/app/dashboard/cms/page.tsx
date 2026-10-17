@@ -127,6 +127,13 @@ export default function CmsIndexPage() {
           ctaLabel="Manage Causes"
         />
         <QuickAction
+          icon={<Sparkles className="h-6 w-6 text-sky-600" />}
+          title="Know About Us"
+          description="Mission narrative & auto-sliding images"
+          href="/dashboard/cms/know-about-us"
+          ctaLabel="Manage Section"
+        />
+        <QuickAction
           icon={<Target className="h-6 w-6 text-amber-600" />}
           title="Featured Campaigns"
           description="Urgent needs section & hero card"
@@ -139,6 +146,13 @@ export default function CmsIndexPage() {
           description="Homepage impact metrics and stats"
           href="/dashboard/cms/our-endeavour"
           ctaLabel="Manage Metrics"
+        />
+        <QuickAction
+          icon={<HeartHandshake className="h-6 w-6 text-[#003399]" />}
+          title="Donation Impact Cards"
+          description="Interactive cards, images & amounts"
+          href="/dashboard/cms/donation-cards"
+          ctaLabel="Manage Cards"
         />
         <QuickAction
           icon={<Target className="h-6 w-6 text-indigo-600" />}

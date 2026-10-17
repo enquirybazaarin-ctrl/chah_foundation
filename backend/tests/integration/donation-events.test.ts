@@ -30,6 +30,9 @@ describe('Donation Events Integration (Phase D)', () => {
     await prisma.refund.deleteMany();
     await prisma.payment.deleteMany();
     await prisma.donation.deleteMany();
+    await prisma.subscription.deleteMany();
+    await prisma.donorTag.deleteMany();
+    await prisma.duplicateDonorSuggestion.deleteMany();
     await prisma.donor.deleteMany();
     await prisma.campaign.deleteMany();
     await prisma.campaignCategory.deleteMany();
@@ -75,6 +78,9 @@ describe('Donation Events Integration (Phase D)', () => {
     await prisma.refund.deleteMany();
     await prisma.payment.deleteMany();
     await prisma.donation.deleteMany();
+    await prisma.subscription.deleteMany();
+    await prisma.donorTag.deleteMany();
+    await prisma.duplicateDonorSuggestion.deleteMany();
     await prisma.donor.deleteMany();
     await prisma.campaign.deleteMany();
     await prisma.campaignCategory.deleteMany();
@@ -107,6 +113,9 @@ describe('Donation Events Integration (Phase D)', () => {
     await prisma.refund.deleteMany();
     await prisma.payment.deleteMany();
     await prisma.donation.deleteMany();
+    await prisma.subscription.deleteMany();
+    await prisma.donorTag.deleteMany();
+    await prisma.duplicateDonorSuggestion.deleteMany();
     await prisma.donor.deleteMany();
     await prisma.numberSequence.deleteMany();
   });

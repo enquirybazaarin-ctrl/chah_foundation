@@ -56,6 +56,26 @@ export class CampaignRepository {
   }
 
   public async findFeaturedSectionCampaigns(limit: number = 4) {
+    const educationCampaigns = await prisma.campaign.findMany({
+      where: {
+        status: 'ACTIVE',
+        category: {
+          slug: { in: ['education', 'education-and-school-support'] }
+        }
+      },
+      include: { category: true, featured_image: true },
+      orderBy: [
+        { is_featured: 'desc' },
+        { sort_order: 'asc' },
+        { created_at: 'desc' }
+      ],
+      take: limit
+    });
+
+    if (educationCampaigns.length > 0) {
+      return educationCampaigns;
+    }
+
     return prisma.campaign.findMany({
       where: {
         status: 'ACTIVE'
@@ -236,6 +256,50 @@ export class CampaignRepository {
         { sort_order: 'asc' },
         { created_at: 'desc' }
       ],
+      take: limit
+    });
+  }
+
+  public async getCategorySectionSettings(prefix: string, defaultBadge: string, defaultHeading: string, defaultSubheading: string): Promise<FeaturedCampaignSectionSettings> {
+    const settings = await prisma.setting.findMany({
+      where: {
+        setting_key: {
+          in: [
+            `${prefix}_badge`,
+            `${prefix}_heading`,
+            `${prefix}_subheading`
+          ]
+        }
+      }
+    });
+    const map = new Map(settings.map((s) => [s.setting_key, s.setting_value]));
+    return {
+      badge: map.get(`${prefix}_badge`) ?? defaultBadge,
+      heading: map.get(`${prefix}_heading`) ?? defaultHeading,
+      subheading: map.get(`${prefix}_subheading`) ?? defaultSubheading,
+    };
+  }
+
+  public async updateCategorySectionSettings(prefix: string, settings: Partial<FeaturedCampaignSectionSettings>) {
+    const updates: Promise<any>[] = [];
+    if (settings.badge !== undefined) {
+      updates.push(prisma.setting.upsert({ where: { setting_key: `${prefix}_badge` }, update: { setting_value: settings.badge }, create: { setting_key: `${prefix}_badge`, setting_value: settings.badge } }));
+    }
+    if (settings.heading !== undefined) {
+      updates.push(prisma.setting.upsert({ where: { setting_key: `${prefix}_heading` }, update: { setting_value: settings.heading }, create: { setting_key: `${prefix}_heading`, setting_value: settings.heading } }));
+    }
+    if (settings.subheading !== undefined) {
+      updates.push(prisma.setting.upsert({ where: { setting_key: `${prefix}_subheading` }, update: { setting_value: settings.subheading }, create: { setting_key: `${prefix}_subheading`, setting_value: settings.subheading } }));
+    }
+    await Promise.all(updates);
+    return this.getCategorySectionSettings(prefix, '', '', '');
+  }
+
+  public async findCategorySectionCampaigns(categorySlug: string, limit: number = 4) {
+    return prisma.campaign.findMany({
+      where: { status: 'ACTIVE', category: { slug: categorySlug } },
+      include: { category: true, featured_image: true },
+      orderBy: [{ is_featured: 'desc' }, { sort_order: 'asc' }, { created_at: 'desc' }],
       take: limit
     });
   }

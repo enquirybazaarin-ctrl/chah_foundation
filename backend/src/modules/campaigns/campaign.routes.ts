@@ -11,6 +11,11 @@ import {
   updateFeaturedSectionSettings,
   getMedicalSection,
   updateMedicalSectionSettings,
+  getEldercareSection,
+  updateEldercareSectionSettings,
+  getFoodSection,
+  updateFoodSectionSettings,
+  getCampaignSupporters,
 } from './campaign.controller';
 import { protect } from '../auth/auth.middleware';
 import { requirePermission } from '../auth/rbac.middleware';
@@ -20,6 +25,8 @@ import {
   updateCampaignSchema,
   updateFeaturedSectionSettingsSchema,
   updateMedicalSectionSettingsSchema,
+  updateEldercareSectionSettingsSchema,
+  updateFoodSectionSettingsSchema,
 } from './campaign.validation';
 
 const router = Router();
@@ -28,7 +35,11 @@ const router = Router();
 router.get('/', getCampaignsPublic);
 router.get('/featured-section', getFeaturedSection);
 router.get('/medical-section', getMedicalSection);
+router.get('/eldercare-section', getEldercareSection);
+router.get('/food-section', getFoodSection);
 router.get('/slug/:slug', getCampaignBySlug);
+router.get('/id/:id', getCampaignById);
+router.get('/:id/supporters', getCampaignSupporters);
 
 // Admin Section Settings
 router.put(
@@ -45,6 +56,22 @@ router.put(
   requirePermission('update', 'campaigns'),
   validateRequest(updateMedicalSectionSettingsSchema),
   updateMedicalSectionSettings
+);
+
+router.put(
+  '/eldercare-section/settings',
+  protect,
+  requirePermission('update', 'campaigns'),
+  validateRequest(updateEldercareSectionSettingsSchema),
+  updateEldercareSectionSettings
+);
+
+router.put(
+  '/food-section/settings',
+  protect,
+  requirePermission('update', 'campaigns'),
+  validateRequest(updateFoodSectionSettingsSchema),
+  updateFoodSectionSettings
 );
 
 // Admin routes

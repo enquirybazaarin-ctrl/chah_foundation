@@ -88,6 +88,19 @@ export const archiveProject = async (req: Request, res: Response, next: NextFunc
   }
 };
 
+export const deleteProject = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = BigInt(req.params.id as string);
+    await projectService.deleteProject(id);
+    res.status(200).json({
+      status: 'success',
+      message: 'Project deleted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const createActivity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const projectId = BigInt(req.params.id as string);

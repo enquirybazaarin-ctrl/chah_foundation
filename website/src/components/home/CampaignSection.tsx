@@ -75,8 +75,8 @@ export function CampaignSection({ title, subtitle, campaigns, theme = "light" }:
                     </div>
                   </div>
 
-                  <Link href={`/donate?campaign=${campaign.id}`} className="flex items-center justify-center bg-[#53b34b] text-white font-bold text-[15px] px-8 py-3.5 rounded-xl hover:bg-[#4a9f43] transition-colors shadow-[0_8px_20px_rgba(83,179,75,0.25)] hover:shadow-[0_12px_25px_rgba(83,179,75,0.35)] w-full">
-                    Donate Now
+                  <Link href={`/campaigns/${campaign.slug || campaign.id}`} className="flex items-center justify-center bg-[#53b34b] text-white font-bold text-[15px] px-8 py-3.5 rounded-xl hover:bg-[#4a9f43] transition-colors shadow-[0_8px_20px_rgba(83,179,75,0.25)] hover:shadow-[0_12px_25px_rgba(83,179,75,0.35)] w-full">
+                    View Campaign
                   </Link>
                 </div>
               </div>

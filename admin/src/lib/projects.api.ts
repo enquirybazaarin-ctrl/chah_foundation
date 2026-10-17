@@ -42,6 +42,10 @@ export async function updateProject(id: string, payload: UpdateProjectPayload): 
   return res.data.data.project;
 }
 
+export async function deleteProject(id: string): Promise<void> {
+  await api.delete(`/api/v1/projects/${id}`);
+}
+
 export async function createProjectActivity(projectId: string, payload: CreateProjectActivityPayload): Promise<ProjectActivity> {
   const res = await api.post<{ status: string; data: { activity: ProjectActivity } }>(`/api/v1/projects/${projectId}/activities`, payload);
   return res.data.data.activity;

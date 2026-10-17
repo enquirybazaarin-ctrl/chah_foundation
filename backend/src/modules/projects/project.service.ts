@@ -3,7 +3,7 @@ import { CreateProjectInput, UpdateProjectInput, CreateActivityInput, UpdateActi
 import { AppError } from '../../utils/errors';
 import slugify from 'slugify';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { prisma } from '../../lib/prisma';
+import { prisma } from '../../config/database';
 
 export class ProjectService {
   private generateSlug(title: string): string {
@@ -24,7 +24,7 @@ export class ProjectService {
           slug: candidateSlug,
           status,
         });
-        return project;
+        return this.getProjectById(project!.id);
       } catch (error) {
         if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
           // Unique constraint failed on slug
@@ -40,26 +40,59 @@ export class ProjectService {
   }
 
   async getProjects(options: ProjectQueryOptions) {
-    return projectRepository.findAll(options);
+    const result = await projectRepository.findAll(options);
+    return {
+      ...result,
+      projects: result.projects.map((p: any) => ({
+        ...p,
+        id: p.id.toString(),
+        featured_image_url: p.featured_image?.url || p.featured_image_url || null,
+      }))
+    };
   }
 
   async getProjectById(id: bigint) {
     const project = await projectRepository.findById(id);
     if (!project) throw new AppError('Project not found', 404);
-    return project;
+    return {
+      ...project,
+      id: project.id.toString(),
+      featured_image_id: project.featured_image_id ? project.featured_image_id.toString() : null,
+      featured_image_url: project.featured_image?.url || null,
+      gallery_images: (project as any).gallery_images?.map((g: any) => ({
+        id: g.id.toString(),
+        media_id: g.media_id ? g.media_id.toString() : null,
+        url: g.media?.url || null,
+        caption: g.media?.caption || null,
+        alt_text: g.media?.alt_text || null
+      })) || []
+    };
   }
 
   async getProjectBySlug(slug: string) {
     const project = await projectRepository.findBySlug(slug);
     if (!project) throw new AppError('Project not found', 404);
-    return project;
+    return {
+      ...project,
+      id: project.id.toString(),
+      featured_image_id: project.featured_image_id ? project.featured_image_id.toString() : null,
+      featured_image_url: project.featured_image?.url || null,
+      gallery_images: (project as any).gallery_images?.map((g: any) => ({
+        id: g.id.toString(),
+        media_id: g.media_id ? g.media_id.toString() : null,
+        url: g.media?.url || null,
+        caption: g.media?.caption || null,
+        alt_text: g.media?.alt_text || null
+      })) || []
+    };
   }
 
   async updateProject(id: bigint, data: UpdateProjectInput) {
     const existing = await projectRepository.findById(id);
     if (!existing) throw new AppError('Project not found', 404);
 
-    return projectRepository.update(id, data);
+    await projectRepository.update(id, data);
+    return this.getProjectById(id);
   }
 
   async archiveProject(id: bigint) {
@@ -67,6 +100,13 @@ export class ProjectService {
     if (!existing) throw new AppError('Project not found', 404);
 
     return projectRepository.updateStatus(id, 'ARCHIVED');
+  }
+
+  async deleteProject(id: bigint) {
+    const existing = await projectRepository.findById(id);
+    if (!existing) throw new AppError('Project not found', 404);
+
+    return projectRepository.delete(id);
   }
 
   async createActivity(projectId: bigint, data: CreateActivityInput) {
@@ -118,16 +158,15 @@ export class ProjectService {
       }
     });
 
-    // Format the projects properly for the frontend
-    const formattedProjects = projects.map(p => ({
+    const formattedProjects = projects.map((p: any) => ({
       ...p,
       id: p.id.toString(),
       featured_image_url: p.featured_image?.url || p.featured_image_url
     }));
 
-    const featured = formattedProjects.find(p => p.is_featured) || formattedProjects[0] || null;
+    const featured = formattedProjects.find((p: any) => p.is_featured) || formattedProjects[0] || null;
     const supporting = featured 
-      ? formattedProjects.filter(p => p.id !== featured.id).slice(0, 2)
+      ? formattedProjects.filter((p: any) => p.id !== featured.id).slice(0, 2)
       : formattedProjects.slice(1, 3);
 
     return {

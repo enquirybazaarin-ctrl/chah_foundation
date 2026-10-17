@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Plus, ExternalLink } from 'lucide-react';
+import { Plus, Edit, Trash2, ExternalLink } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -15,11 +15,11 @@ import {
 } from '@/components/ui/table';
 import { ProjectStatusBadge } from '@/components/ui/ProjectStatusBadge';
 import { Pagination } from '@/components/ui/Pagination';
-import { getProjectsAdmin } from '@/lib/projects.api';
+import { getProjectsAdmin, deleteProject } from '@/lib/projects.api';
 import { formatDate } from '@/lib/utils';
 import type { Project, PaginatedResponse, ProjectStatus } from '@/lib/types';
 
-const PAGE_LIMIT = 20;
+const PAGE_LIMIT = 50;
 
 const STATUS_FILTER_OPTIONS: { label: string; value: ProjectStatus | 'ALL' }[] = [
   { label: 'All Statuses', value: 'ALL' },
@@ -40,9 +40,30 @@ export default function ProjectsPage() {
   const [result, setResult] = useState<PaginatedResponse<Project> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const page = parseInt(searchParams.get('page') ?? '1', 10);
   const statusFilter = (searchParams.get('status') ?? 'ALL') as ProjectStatus | 'ALL';
+
+  const handleDelete = async (e: React.MouseEvent, id: string, title: string) => {
+    e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to delete "${title}"? This cannot be undone.`)) {
+      return;
+    }
+    setDeletingId(id);
+    try {
+      await deleteProject(id);
+      setResult(prev => prev ? {
+        ...prev,
+        data: prev.data.filter(p => p.id !== id),
+        meta: { ...prev.meta, total: prev.meta.total - 1 }
+      } : null);
+    } catch {
+      alert('Failed to delete project. Please try again.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -148,7 +169,7 @@ export default function ProjectsPage() {
               <TableHead>Start</TableHead>
               <TableHead>End</TableHead>
               <TableHead>Created</TableHead>
-              <TableHead className="w-[80px]">Actions</TableHead>
+              <TableHead className="w-[180px] text-right pr-4">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -174,12 +195,12 @@ export default function ProjectsPage() {
               filteredData?.map((project) => (
                 <TableRow
                   key={project.id}
-                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  className="hover:bg-gray-50 transition-colors cursor-pointer group"
                   onClick={() => router.push(`/dashboard/projects/${project.id}`)}
                 >
                   <TableCell>
                     <div className="max-w-[320px]">
-                      <p className="font-medium text-gray-900 truncate">{project.title}</p>
+                      <p className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors truncate">{project.title}</p>
                       <p className="text-xs text-gray-400 font-mono truncate mt-0.5">
                         /{project.slug}
                       </p>
@@ -197,17 +218,26 @@ export default function ProjectsPage() {
                   <TableCell className="text-sm text-gray-500">
                     {formatDate(project.created_at)}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-2 pr-2">
                       <Link
-                         href={`/dashboard/projects/${project.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
-                        aria-label={`Edit ${project.title}`}
-                        title="Edit project"
+                        href={`/dashboard/projects/${project.id}`}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors"
+                        title="Edit Project"
                       >
-                        <ExternalLink className="h-4 w-4" />
+                        <Edit className="h-3.5 w-3.5" />
+                        Edit
                       </Link>
+                      <button
+                        type="button"
+                        disabled={deletingId === project.id}
+                        onClick={(e) => handleDelete(e, project.id, project.title)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-md transition-colors disabled:opacity-50"
+                        title="Delete Project"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        {deletingId === project.id ? 'Deleting...' : 'Delete'}
+                      </button>
                     </div>
                   </TableCell>
                 </TableRow>

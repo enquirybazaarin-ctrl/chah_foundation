@@ -18,7 +18,7 @@ app.use(helmet({
 }));
 
 const allowedOrigins = [env.FRONTEND_URL, env.ADMIN_CORS_ORIGIN].filter(Boolean) as string[];
-const devOrigins = [...allowedOrigins, 'http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001'];
+const devOrigins = [...allowedOrigins, 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:3002'];
 
 app.use(cors({ 
   origin: env.NODE_ENV === 'production' ? allowedOrigins : devOrigins,
@@ -90,6 +90,7 @@ apiRouter.use('/faqs', faqRoutes);
 
 import metricRoutes from './modules/metrics/metric.routes';
 apiRouter.use('/impact-metrics', metricRoutes);
+apiRouter.use('/metrics', metricRoutes);
 
 import cmsRoutes from './modules/cms/cms.routes';
 apiRouter.use('/cms', cmsRoutes);
@@ -99,6 +100,9 @@ apiRouter.use('/hero-slides', heroSlideRoutes);
 
 import whatWeDoRoutes from './modules/what-we-do/what-we-do.routes';
 apiRouter.use('/what-we-do', whatWeDoRoutes);
+
+import knowAboutUsRoutes from './modules/know-about-us/know-about-us.routes';
+apiRouter.use('/know-about-us', knowAboutUsRoutes);
 
 import operationsRoutes from './modules/operations/operations.routes';
 apiRouter.use('/operations', operationsRoutes);

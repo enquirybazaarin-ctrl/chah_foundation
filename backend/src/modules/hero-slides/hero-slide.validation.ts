@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const createHeroSlideSchema = z.object({
   body: z.object({
     tag: z.string().max(255).optional(),
-    title: z.string().min(1, 'Title is required').max(255),
+    title: z.string().max(255).optional().default(''),
     highlight: z.string().max(255).optional(),
     description: z.string().optional(),
     image_url: z.string().url('Invalid image URL').min(1, 'Image URL is required'),
@@ -20,7 +20,7 @@ export const createHeroSlideSchema = z.object({
 export const updateHeroSlideSchema = z.object({
   body: z.object({
     tag: z.string().max(255).optional(),
-    title: z.string().min(1, 'Title cannot be empty').max(255).optional(),
+    title: z.string().max(255).optional(),
     highlight: z.string().max(255).optional(),
     description: z.string().optional(),
     image_url: z.string().url('Invalid image URL').optional(),

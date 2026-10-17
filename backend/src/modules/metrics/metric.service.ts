@@ -1,6 +1,6 @@
 import { metricRepository } from './metric.repository';
 import { AppError } from '../../utils/errors';
-import { prisma } from '../../lib/prisma';
+import { prisma } from '../../config/database';
 
 export class MetricService {
   async createMetric(data: any) {

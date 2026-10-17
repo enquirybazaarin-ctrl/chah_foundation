@@ -134,13 +134,6 @@ export class PaymentService {
                 }
               });
 
-              await tx.donation.update({
-                where: { id: internalPayment.donation_id },
-                data: {
-                  status: 'FAILED',
-                  updated_at: new Date()
-                }
-              });
 
               if (webhookEvent) {
                 await tx.paymentWebhookEvent.update({

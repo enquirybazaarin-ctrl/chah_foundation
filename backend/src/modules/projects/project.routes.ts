@@ -45,6 +45,13 @@ router.patch(
   projectController.archiveProject
 );
 
+router.delete(
+  '/:id',
+  protect,
+  requirePermission('delete', 'projects'),
+  projectController.deleteProject
+);
+
 // Protected routes (Activities)
 router.post(
   '/:id/activities',

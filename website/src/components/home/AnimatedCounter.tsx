@@ -6,10 +6,19 @@ interface AnimatedCounterProps {
   end: number;
   decimals?: number;
   duration?: number;
+  prefix?: string;
   suffix?: string;
+  useLocale?: boolean;
 }
 
-export function AnimatedCounter({ end, decimals = 0, duration = 2000, suffix = "" }: AnimatedCounterProps) {
+export function AnimatedCounter({ 
+  end, 
+  decimals = 0, 
+  duration = 2000, 
+  prefix = "",
+  suffix = "",
+  useLocale = false 
+}: AnimatedCounterProps) {
   const [count, setCount] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
@@ -60,9 +69,15 @@ export function AnimatedCounter({ end, decimals = 0, duration = 2000, suffix = "
     return () => cancelAnimationFrame(animationFrame);
   }, [isVisible, end, duration]);
 
+  const formattedCount = decimals > 0 
+    ? count.toFixed(decimals) 
+    : useLocale 
+      ? Math.floor(count).toLocaleString('en-IN') 
+      : Math.floor(count).toString();
+
   return (
     <span ref={ref}>
-      {count.toFixed(decimals)}{suffix}
+      {prefix}{formattedCount}{suffix}
     </span>
   );
 }

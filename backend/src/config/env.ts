@@ -1,10 +1,8 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
 
-// Only load .env from file in non-production environments
-if (process.env.NODE_ENV !== 'production') {
-  dotenv.config();
-}
+// Load .env configuration
+dotenv.config();
 
 const baseSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -18,6 +16,11 @@ const baseSchema = z.object({
   RAZORPAY_KEY_SECRET: z.string().min(1, 'RAZORPAY_KEY_SECRET is required'),
   RAZORPAY_WEBHOOK_SECRET: z.string().min(1, 'RAZORPAY_WEBHOOK_SECRET is required'),
   STORAGE_BASE_URL: z.string().optional(),
+  MSG91_API_KEY: z.string().optional(),
+  MSG91_80G_TEMPLATE_ID: z.string().optional(),
+  MSG91_FROM_EMAIL: z.string().optional(),
+  MSG91_FROM_NAME: z.string().optional(),
+  MSG91_DOMAIN: z.string().optional(),
 });
 
 const envSchema = baseSchema.refine(

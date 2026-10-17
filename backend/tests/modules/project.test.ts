@@ -29,12 +29,14 @@ describe('Project API', () => {
   });
 
   afterAll(async () => {
-    await prisma.activity.deleteMany({});
-    await prisma.project.deleteMany({});
+    if (projectId) {
+      await prisma.activity.deleteMany({ where: { project_id: BigInt(projectId) } });
+      await prisma.project.deleteMany({ where: { id: BigInt(projectId) } });
+    }
+    await prisma.project.deleteMany({ where: { slug: 'water-for-all' } });
     await prisma.user.deleteMany({ where: { email: 'projectadmin@test.com' } });
-    await prisma.rolePermission.deleteMany({});
+    await prisma.rolePermission.deleteMany({ where: { role: { name: 'PROJECT_ADMIN' } } });
     await prisma.role.deleteMany({ where: { name: 'PROJECT_ADMIN' } });
-    await prisma.permission.deleteMany({ where: { resource: 'projects' } });
   });
 
   it('should create a new project', async () => {

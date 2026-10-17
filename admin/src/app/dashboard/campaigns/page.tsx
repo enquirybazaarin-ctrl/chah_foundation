@@ -15,7 +15,17 @@ import {
 } from '@/components/ui/table';
 import { CampaignStatusBadge, FundraisingProgress } from '@/components/ui/CampaignStatusBadge';
 import { Pagination } from '@/components/ui/Pagination';
-import { getCampaignsAdmin, getFeaturedCampaignSectionAdmin, updateFeaturedCampaignSectionSettings, getMedicalEmergencySectionAdmin, updateMedicalEmergencySectionSettings } from '@/lib/campaigns.api';
+import { 
+  getCampaignsAdmin, 
+  getFeaturedCampaignSectionAdmin, 
+  updateFeaturedCampaignSectionSettings, 
+  getMedicalEmergencySectionAdmin, 
+  updateMedicalEmergencySectionSettings,
+  getEldercareSectionAdmin,
+  updateEldercareSectionSettings,
+  getFoodSectionAdmin,
+  updateFoodSectionSettings
+} from '@/lib/campaigns.api';
 import { formatDate } from '@/lib/utils';
 import type { Campaign, PaginatedResponse, CampaignStatus } from '@/lib/types';
 
@@ -65,6 +75,30 @@ export default function CampaignsPage() {
     supporting: Campaign[];
   } | null>(null);
 
+  // Eldercare Section Settings state
+  const [showEldercareSectionSettings, setShowEldercareSectionSettings] = useState(false);
+  const [eldercareSectionBadge, setEldercareSectionBadge] = useState('');
+  const [eldercareSectionHeading, setEldercareSectionHeading] = useState('');
+  const [eldercareSectionSubheading, setEldercareSectionSubheading] = useState('');
+  const [savingEldercareSettings, setSavingEldercareSettings] = useState(false);
+  const [eldercareSettingsSuccess, setEldercareSettingsSuccess] = useState<string | null>(null);
+  const [eldercareFeaturedData, setEldercareFeaturedData] = useState<{
+    featured: Campaign | null;
+    supporting: Campaign[];
+  } | null>(null);
+
+  // Food Section Settings state
+  const [showFoodSectionSettings, setShowFoodSectionSettings] = useState(false);
+  const [foodSectionBadge, setFoodSectionBadge] = useState('');
+  const [foodSectionHeading, setFoodSectionHeading] = useState('');
+  const [foodSectionSubheading, setFoodSectionSubheading] = useState('');
+  const [savingFoodSettings, setSavingFoodSettings] = useState(false);
+  const [foodSettingsSuccess, setFoodSettingsSuccess] = useState<string | null>(null);
+  const [foodFeaturedData, setFoodFeaturedData] = useState<{
+    featured: Campaign | null;
+    supporting: Campaign[];
+  } | null>(null);
+
   const page = parseInt(searchParams.get('page') ?? '1', 10);
   const statusFilter = (searchParams.get('status') ?? 'ALL') as CampaignStatus | 'ALL';
 
@@ -75,10 +109,12 @@ export default function CampaignsPage() {
       setLoading(true);
       setError(null);
       try {
-        const [data, featuredSection, medicalSection] = await Promise.all([
+        const [data, featuredSection, medicalSection, eldercareSection, foodSection] = await Promise.all([
           getCampaignsAdmin({ page, limit: PAGE_LIMIT }),
           getFeaturedCampaignSectionAdmin().catch(() => null),
           getMedicalEmergencySectionAdmin().catch(() => null),
+          getEldercareSectionAdmin().catch(() => null),
+          getFoodSectionAdmin().catch(() => null),
         ]);
         if (!cancelled) {
           setResult(data);
@@ -98,6 +134,24 @@ export default function CampaignsPage() {
             setMedicalFeaturedData({
               featured: medicalSection.featured,
               supporting: medicalSection.supporting,
+            });
+          }
+          if (eldercareSection) {
+            setEldercareSectionBadge(eldercareSection.section.badge || '');
+            setEldercareSectionHeading(eldercareSection.section.heading || '');
+            setEldercareSectionSubheading(eldercareSection.section.subheading || '');
+            setEldercareFeaturedData({
+              featured: eldercareSection.featured,
+              supporting: eldercareSection.supporting,
+            });
+          }
+          if (foodSection) {
+            setFoodSectionBadge(foodSection.section.badge || '');
+            setFoodSectionHeading(foodSection.section.heading || '');
+            setFoodSectionSubheading(foodSection.section.subheading || '');
+            setFoodFeaturedData({
+              featured: foodSection.featured,
+              supporting: foodSection.supporting,
             });
           }
         }
@@ -150,6 +204,44 @@ export default function CampaignsPage() {
     }
   };
 
+  const handleSaveEldercareSectionSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingEldercareSettings(true);
+    setEldercareSettingsSuccess(null);
+    try {
+      await updateEldercareSectionSettings({
+        badge: eldercareSectionBadge,
+        heading: eldercareSectionHeading,
+        subheading: eldercareSectionSubheading,
+      });
+      setEldercareSettingsSuccess('Eldercare section headings updated successfully!');
+      setTimeout(() => setEldercareSettingsSuccess(null), 4000);
+    } catch {
+      alert('Failed to update eldercare section settings.');
+    } finally {
+      setSavingEldercareSettings(false);
+    }
+  };
+
+  const handleSaveFoodSectionSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingFoodSettings(true);
+    setFoodSettingsSuccess(null);
+    try {
+      await updateFoodSectionSettings({
+        badge: foodSectionBadge,
+        heading: foodSectionHeading,
+        subheading: foodSectionSubheading,
+      });
+      setFoodSettingsSuccess('Food section headings updated successfully!');
+      setTimeout(() => setFoodSettingsSuccess(null), 4000);
+    } catch {
+      alert('Failed to update food section settings.');
+    } finally {
+      setSavingFoodSettings(false);
+    }
+  };
+
   // Filter client-side by status (admin list returns all)
   const filteredData = statusFilter === 'ALL'
     ? result?.data
@@ -185,7 +277,7 @@ export default function CampaignsPage() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => { setShowSectionSettings(!showSectionSettings); setShowMedicalSectionSettings(false); }}
+            onClick={() => { setShowSectionSettings(!showSectionSettings); setShowMedicalSectionSettings(false); setShowEldercareSectionSettings(false); setShowFoodSectionSettings(false); }}
             className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium border shadow-sm transition-colors ${
               showSectionSettings
                 ? 'bg-amber-50 text-amber-900 border-amber-300'
@@ -193,11 +285,11 @@ export default function CampaignsPage() {
             }`}
           >
             <Settings2 className="h-4 w-4 text-amber-600" />
-            Extreme Needs Settings
+            Extreme Needs
           </button>
           <button
             type="button"
-            onClick={() => { setShowMedicalSectionSettings(!showMedicalSectionSettings); setShowSectionSettings(false); }}
+            onClick={() => { setShowMedicalSectionSettings(!showMedicalSectionSettings); setShowSectionSettings(false); setShowEldercareSectionSettings(false); setShowFoodSectionSettings(false); }}
             className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium border shadow-sm transition-colors ${
               showMedicalSectionSettings
                 ? 'bg-rose-50 text-rose-900 border-rose-300'
@@ -205,7 +297,31 @@ export default function CampaignsPage() {
             }`}
           >
             <Settings2 className="h-4 w-4 text-rose-600" />
-            Medical Needs Settings
+            Medical Needs
+          </button>
+          <button
+            type="button"
+            onClick={() => { setShowEldercareSectionSettings(!showEldercareSectionSettings); setShowSectionSettings(false); setShowMedicalSectionSettings(false); setShowFoodSectionSettings(false); }}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium border shadow-sm transition-colors ${
+              showEldercareSectionSettings
+                ? 'bg-blue-50 text-blue-900 border-blue-300'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <Settings2 className="h-4 w-4 text-blue-600" />
+            Eldercare
+          </button>
+          <button
+            type="button"
+            onClick={() => { setShowFoodSectionSettings(!showFoodSectionSettings); setShowSectionSettings(false); setShowMedicalSectionSettings(false); setShowEldercareSectionSettings(false); }}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium border shadow-sm transition-colors ${
+              showFoodSectionSettings
+                ? 'bg-green-50 text-green-900 border-green-300'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <Settings2 className="h-4 w-4 text-green-600" />
+            Food Needs
           </button>
           <Link
             href="/dashboard/campaigns/new"
@@ -449,6 +565,172 @@ export default function CampaignsPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Eldercare Section Settings Panel */}
+      {showEldercareSectionSettings && (
+        <div className="bg-blue-50/50 rounded-xl border border-blue-200 p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-blue-200/70">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-blue-600" />
+              <h2 className="text-base font-semibold text-gray-900">
+                Homepage &quot;Elder Care&quot; Section
+              </h2>
+            </div>
+            <span className="text-xs bg-blue-100 text-blue-800 font-medium px-2.5 py-0.5 rounded-full border border-blue-300">
+              Live on Homepage
+            </span>
+          </div>
+
+          <form onSubmit={handleSaveEldercareSectionSettings} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                  Section Eyebrow / Badge
+                </label>
+                <input
+                  type="text"
+                  value={eldercareSectionBadge}
+                  onChange={(e) => setEldercareSectionBadge(e.target.value)}
+                  placeholder="ELDER CARE"
+                  className="w-full h-9 rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                  Heading
+                </label>
+                <input
+                  type="text"
+                  value={eldercareSectionHeading}
+                  onChange={(e) => setEldercareSectionHeading(e.target.value)}
+                  placeholder="Support the elderly in their twilight years."
+                  className="w-full h-9 rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <div className="md:col-span-3">
+                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                  Subheading
+                </label>
+                <textarea
+                  value={eldercareSectionSubheading}
+                  onChange={(e) => setEldercareSectionSubheading(e.target.value)}
+                  placeholder="Help us provide food, medical care, and a dignified life to the elderly."
+                  rows={2}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <div className="text-sm">
+                {eldercareSettingsSuccess ? (
+                  <span className="flex items-center gap-1.5 text-green-600 font-medium">
+                    <CheckCircle2 className="h-4 w-4" />
+                    {eldercareSettingsSuccess}
+                  </span>
+                ) : (
+                  <span className="text-gray-500 flex items-center gap-1.5">
+                    <AlertCircle className="h-4 w-4" />
+                    Changes are saved instantly
+                  </span>
+                )}
+              </div>
+              <button
+                type="submit"
+                disabled={savingEldercareSettings}
+                className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 transition-colors"
+              >
+                {savingEldercareSettings ? 'Saving...' : 'Save Settings'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Food Section Settings Panel */}
+      {showFoodSectionSettings && (
+        <div className="bg-green-50/50 rounded-xl border border-green-200 p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-green-200/70">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-green-600" />
+              <h2 className="text-base font-semibold text-gray-900">
+                Homepage &quot;Food & Hunger&quot; Section
+              </h2>
+            </div>
+            <span className="text-xs bg-green-100 text-green-800 font-medium px-2.5 py-0.5 rounded-full border border-green-300">
+              Live on Homepage
+            </span>
+          </div>
+
+          <form onSubmit={handleSaveFoodSectionSettings} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                  Section Eyebrow / Badge
+                </label>
+                <input
+                  type="text"
+                  value={foodSectionBadge}
+                  onChange={(e) => setFoodSectionBadge(e.target.value)}
+                  placeholder="FOOD & HUNGER"
+                  className="w-full h-9 rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                  Heading
+                </label>
+                <input
+                  type="text"
+                  value={foodSectionHeading}
+                  onChange={(e) => setFoodSectionHeading(e.target.value)}
+                  placeholder="Fight hunger, save lives."
+                  className="w-full h-9 rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none"
+                />
+              </div>
+
+              <div className="md:col-span-3">
+                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                  Subheading
+                </label>
+                <textarea
+                  value={foodSectionSubheading}
+                  onChange={(e) => setFoodSectionSubheading(e.target.value)}
+                  placeholder="Your contribution can help provide nutritious meals to those struggling with hunger."
+                  rows={2}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <div className="text-sm">
+                {foodSettingsSuccess ? (
+                  <span className="flex items-center gap-1.5 text-green-600 font-medium">
+                    <CheckCircle2 className="h-4 w-4" />
+                    {foodSettingsSuccess}
+                  </span>
+                ) : (
+                  <span className="text-gray-500 flex items-center gap-1.5">
+                    <AlertCircle className="h-4 w-4" />
+                    Changes are saved instantly
+                  </span>
+                )}
+              </div>
+              <button
+                type="submit"
+                disabled={savingFoodSettings}
+                className="inline-flex items-center justify-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 disabled:opacity-50 transition-colors"
+              >
+                {savingFoodSettings ? 'Saving...' : 'Save Settings'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

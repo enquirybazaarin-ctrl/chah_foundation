@@ -1,4 +1,5 @@
-import { fetchApi } from './api';
+import api from './api';
+
 export interface MetricItem {
   id: string;
   metric_name: string;
@@ -25,36 +26,25 @@ export interface OurEndeavourSectionData {
 // Admin API routes for Our Endeavour Section
 
 export async function getOurEndeavourAdmin(): Promise<OurEndeavourSectionData> {
-  const data = await fetchApi('/api/v1/metrics/section');
-  return data;
+  const res = await api.get('/api/v1/metrics/section');
+  return res.data.data || res.data;
 }
 
 export async function updateOurEndeavourSettings(settings: any): Promise<any> {
-  const data = await fetchApi('/api/v1/metrics/section', {
-    method: 'PATCH',
-    body: JSON.stringify(settings),
-  });
-  return data.section;
+  const res = await api.patch('/api/v1/metrics/section', settings);
+  return res.data.data?.section || res.data.section;
 }
 
 export async function createMetric(payload: any): Promise<MetricItem> {
-  const data = await fetchApi('/api/v1/metrics', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-  return data.metric;
+  const res = await api.post('/api/v1/metrics', payload);
+  return res.data.data?.metric || res.data.metric;
 }
 
 export async function updateMetric(id: string, payload: any): Promise<MetricItem> {
-  const data = await fetchApi(`/api/v1/metrics/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(payload),
-  });
-  return data.metric;
+  const res = await api.patch(`/api/v1/metrics/${id}`, payload);
+  return res.data.data?.metric || res.data.metric;
 }
 
 export async function deleteMetric(id: string): Promise<void> {
-  await fetchApi(`/api/v1/metrics/${id}`, {
-    method: 'DELETE',
-  });
+  await api.delete(`/api/v1/metrics/${id}`);
 }

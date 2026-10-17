@@ -12,6 +12,10 @@ coverage/
 uploads/
 storage/
 
+*.sql
+*.zip
+backend_deploy.zip
+
 *.log
 
 .DS_Store
