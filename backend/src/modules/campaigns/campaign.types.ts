@@ -18,6 +18,7 @@ export interface CreateCampaignDTO {
   cta_button_text?: string;
   sort_order?: number;
   supporters_count?: number;
+  supporting_images?: string[];
 }
 
 export interface UpdateCampaignDTO {
@@ -40,6 +41,7 @@ export interface UpdateCampaignDTO {
   cta_button_text?: string;
   sort_order?: number;
   supporters_count?: number;
+  supporting_images?: string[];
 }
 
 export interface CampaignResponse {
@@ -59,6 +61,8 @@ export interface CampaignResponse {
   content?: string;
   featured_image_id: string | null;
   featured_image_url?: string | null;
+  images?: string[];
+  supporting_images?: string[];
   is_featured: boolean;
   is_urgent: boolean;
   urgency_label?: string | null;

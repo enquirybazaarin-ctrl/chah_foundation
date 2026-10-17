@@ -247,7 +247,7 @@ export class CampaignRepository {
       where: {
         status: 'ACTIVE',
         category: {
-          slug: 'medical-emergency' // Assuming slug is medical-emergency
+          slug: { in: ['medical-emergency', 'medical', 'medical-cases'] }
         }
       },
       include: { category: true, featured_image: true },
@@ -296,8 +296,24 @@ export class CampaignRepository {
   }
 
   public async findCategorySectionCampaigns(categorySlug: string, limit: number = 4) {
+    let slugs = [categorySlug];
+    if (categorySlug === 'elder-care' || categorySlug === 'eldercare') {
+      slugs = ['elder-care', 'eldercare', 'elderly-care'];
+    } else if (categorySlug === 'food-and-hunger' || categorySlug === 'food') {
+      slugs = ['food-and-hunger', 'food', 'food-distribution', 'hunger'];
+    } else if (categorySlug === 'education') {
+      slugs = ['education', 'education-and-school-support'];
+    } else if (categorySlug === 'medical-emergency') {
+      slugs = ['medical-emergency', 'medical', 'medical-cases'];
+    }
+
     return prisma.campaign.findMany({
-      where: { status: 'ACTIVE', category: { slug: categorySlug } },
+      where: {
+        status: 'ACTIVE',
+        category: {
+          slug: { in: slugs }
+        }
+      },
       include: { category: true, featured_image: true },
       orderBy: [{ is_featured: 'desc' }, { sort_order: 'asc' }, { created_at: 'desc' }],
       take: limit

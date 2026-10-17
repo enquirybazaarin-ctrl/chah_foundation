@@ -38,7 +38,38 @@ export class CampaignCategoryService {
   }
 
   public async getCategories(): Promise<CampaignCategoryResponse[]> {
+    // Ensure the 4 core categories always exist
+    const coreCategories = [
+      { name: 'Medical Emergency', slug: 'medical-emergency', description: 'Urgent medical care and treatment fundraisers' },
+      { name: 'Education', slug: 'education', description: 'Child education and school essentials fundraisers' },
+      { name: 'Elder Care', slug: 'elder-care', description: 'Support, shelter, and medical care for senior citizens' },
+      { name: 'Food & Hunger', slug: 'food-and-hunger', description: 'Nutritious meals and hunger relief fundraisers' },
+    ];
+
+    for (const cat of coreCategories) {
+      const existing = await campaignCategoryRepository.findBySlug(cat.slug);
+      if (!existing) {
+        try {
+          await campaignCategoryRepository.create(cat);
+        } catch {
+          // Ignore if concurrently created
+        }
+      }
+    }
+
     const categories = await campaignCategoryRepository.findAll();
+    
+    // Sort so core categories appear first
+    const coreOrder = ['medical-emergency', 'education', 'elder-care', 'food-and-hunger'];
+    categories.sort((a, b) => {
+      const indexA = coreOrder.indexOf(a.slug);
+      const indexB = coreOrder.indexOf(b.slug);
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return a.name.localeCompare(b.name);
+    });
+
     return categories.map(c => this.mapResponse(c));
   }
 

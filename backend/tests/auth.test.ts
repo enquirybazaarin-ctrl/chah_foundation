@@ -2,7 +2,7 @@ import request from 'supertest';
 import express from 'express';
 import app from '../src/app';
 import { prisma } from '../src/config/database';
-import * as argon2 from 'argon2';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { env } from '../src/config/env';
 import cookieParser from 'cookie-parser';
@@ -32,8 +32,9 @@ jest.mock('../src/config/database', () => ({
   }
 }));
 
-jest.mock('argon2', () => ({
-  verify: jest.fn(),
+jest.mock('bcryptjs', () => ({
+  compare: jest.fn(),
+  hash: jest.fn(),
 }));
 
 describe('Authentication & RBAC', () => {
@@ -63,7 +64,7 @@ describe('Authentication & RBAC', () => {
         password_hash: 'hashed',
         status: 'ACTIVE'
       });
-      (argon2.verify as jest.Mock).mockResolvedValue(false);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       const res = await request(app)
         .post('/api/v1/auth/login')
@@ -80,7 +81,7 @@ describe('Authentication & RBAC', () => {
         password_hash: 'hashed',
         status: 'INACTIVE'
       });
-      (argon2.verify as jest.Mock).mockResolvedValue(true);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const res = await request(app)
         .post('/api/v1/auth/login')
@@ -97,7 +98,7 @@ describe('Authentication & RBAC', () => {
         password_hash: 'hashed',
         status: 'SUSPENDED'
       });
-      (argon2.verify as jest.Mock).mockResolvedValue(true);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const res = await request(app)
         .post('/api/v1/auth/login')
@@ -118,7 +119,7 @@ describe('Authentication & RBAC', () => {
           permissions: []
         }
       });
-      (argon2.verify as jest.Mock).mockResolvedValue(true);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const res = await request(app)
         .post('/api/v1/auth/login')

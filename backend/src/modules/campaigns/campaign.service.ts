@@ -226,7 +226,14 @@ export class CampaignService {
     auditContext: { actorUserId?: bigint; ipAddress?: string }
   ): Promise<CampaignResponse> {
     const baseSlug = generateSlug(data.title);
-    const sanitizedContent = await this.sanitizeContent(data.content);
+    
+    let rawContent = data.content || '';
+    if (data.supporting_images && data.supporting_images.length > 0) {
+      rawContent = rawContent.replace(/<div class="campaign-gallery-data"[^>]*>[\s\S]*?<\/div>/g, '');
+      rawContent += `\n<div class="campaign-gallery-data" data-gallery='${JSON.stringify(data.supporting_images)}' style="display:none"></div>`;
+    }
+
+    const sanitizedContent = await this.sanitizeContent(rawContent);
     let attempts = 0;
 
     while (true) {
@@ -347,7 +354,17 @@ export class CampaignService {
     if (data.cta_button_text !== undefined) updateData.cta_button_text = data.cta_button_text;
     if (data.sort_order !== undefined) updateData.sort_order = data.sort_order;
     if (data.supporters_count !== undefined) updateData.supporters_count = data.supporters_count;
-    if (data.content !== undefined) updateData.content = await this.sanitizeContent(data.content);
+    
+    let baseContent = data.content !== undefined ? data.content : campaign.content;
+    if (data.supporting_images !== undefined) {
+      baseContent = baseContent.replace(/<div class="campaign-gallery-data"[^>]*>[\s\S]*?<\/div>/g, '');
+      if (data.supporting_images.length > 0) {
+        baseContent += `\n<div class="campaign-gallery-data" data-gallery='${JSON.stringify(data.supporting_images)}' style="display:none"></div>`;
+      }
+      updateData.content = await this.sanitizeContent(baseContent);
+    } else if (data.content !== undefined) {
+      updateData.content = await this.sanitizeContent(data.content);
+    }
 
     const updated = await prisma.$transaction(async (tx) => {
       const updatedCampaign = await tx.campaign.update({
@@ -413,17 +430,34 @@ export class CampaignService {
   private async sanitizeContent(html: string): Promise<string> {
     const { default: sanitizeHtml } = await import('sanitize-html');
     return sanitizeHtml(html, {
-      allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'iframe']),
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'iframe', 'figure', 'figcaption']),
       allowedAttributes: {
         ...sanitizeHtml.defaults.allowedAttributes,
-        'img': ['src', 'alt', 'title', 'width', 'height'],
-        'iframe': ['src', 'width', 'height', 'allowfullscreen']
+        'img': ['src', 'alt', 'title', 'width', 'height', 'loading'],
+        'iframe': ['src', 'width', 'height', 'allowfullscreen'],
+        'div': ['class', 'data-gallery', 'style', 'id']
       },
       allowedIframeHostnames: ['www.youtube.com', 'player.vimeo.com']
     });
   }
 
   private mapResponse(campaign: any): CampaignResponse {
+    let galleryImages: string[] = [];
+    if (campaign.content) {
+      const match = campaign.content.match(/data-gallery='(.*?)'/) || campaign.content.match(/data-gallery="([^\"]*)"/);
+      if (match) {
+        try {
+          const raw = match[1].replace(/&quot;/g, '"');
+          galleryImages = JSON.parse(raw);
+        } catch {}
+      }
+    }
+    const featUrl = campaign.featured_image_url || campaign.featured_image?.url || null;
+    const allImages = [
+      ...(featUrl ? [featUrl] : []),
+      ...galleryImages.filter((img: string) => img !== featUrl)
+    ];
+
     return {
       id: campaign.id.toString(),
       category_id: campaign.category_id.toString(),
@@ -440,7 +474,9 @@ export class CampaignService {
       end_date: campaign.end_date ? campaign.end_date.toISOString() : null,
       content: campaign.content,
       featured_image_id: campaign.featured_image_id ? campaign.featured_image_id.toString() : null,
-      featured_image_url: campaign.featured_image_url || campaign.featured_image?.url || null,
+      featured_image_url: featUrl,
+      images: allImages,
+      supporting_images: galleryImages,
       is_featured: Boolean(campaign.is_featured),
       is_urgent: Boolean(campaign.is_urgent),
       urgency_label: campaign.urgency_label || null,

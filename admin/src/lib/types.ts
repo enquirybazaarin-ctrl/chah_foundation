@@ -114,6 +114,8 @@ export interface Campaign {
   content?: string;              // Omitted in list responses, present in detail
   featured_image_id: string | null;
   featured_image_url?: string | null;
+  images?: string[];
+  supporting_images?: string[];
   is_featured: boolean;
   is_urgent: boolean;
   urgency_label?: string | null;
@@ -140,6 +142,7 @@ export interface CreateCampaignPayload {
   content: string;
   featured_image_id?: string;
   featured_image_url?: string;
+  supporting_images?: string[];
   is_featured?: boolean;
   is_urgent?: boolean;
   urgency_label?: string;
@@ -162,6 +165,7 @@ export interface UpdateCampaignPayload {
   content?: string;
   featured_image_id?: string | null;
   featured_image_url?: string | null;
+  supporting_images?: string[];
   is_featured?: boolean;
   is_urgent?: boolean;
   urgency_label?: string | null;
