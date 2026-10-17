@@ -6,7 +6,7 @@ import { initCronJobs } from './modules/operations/operations.cron';
 
 const server = http.createServer(app);
 
-server.listen(env.PORT, () => {
+server.listen(Number(env.PORT) || 5000, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${env.PORT} in ${env.NODE_ENV} mode`);
   initCronJobs();
 });
