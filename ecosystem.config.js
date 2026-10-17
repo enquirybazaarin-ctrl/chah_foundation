@@ -15,6 +15,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 5000,
+        UV_THREADPOOL_SIZE: '2',
+        NODE_OPTIONS: '--max-old-space-size=256',
       },
     },
     {
@@ -33,6 +35,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
+        UV_THREADPOOL_SIZE: '2',
+        NODE_OPTIONS: '--max-old-space-size=256',
       },
     },
     {
@@ -51,6 +55,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3001,
+        UV_THREADPOOL_SIZE: '2',
+        NODE_OPTIONS: '--max-old-space-size=256',
       },
     },
   ],
