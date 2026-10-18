@@ -9,8 +9,10 @@ build/
 
 coverage/
 
-uploads/
-storage/
+/uploads/
+/storage/
+backend/uploads/
+!backend/src/services/storage/
 
 *.sql
 !backend/scripts/*.sql
