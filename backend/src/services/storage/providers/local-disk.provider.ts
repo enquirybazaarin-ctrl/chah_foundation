@@ -8,11 +8,19 @@ export class LocalDiskStorageProvider implements StorageProvider {
   private readonly baseUrl: string;
 
   constructor() {
-    this.uploadDir = process.env.STORAGE_DIR || path.join(process.cwd(), 'uploads');
-    // Ensure the uploads directory exists
-    if (!fs.existsSync(this.uploadDir)) {
-      fs.mkdirSync(this.uploadDir, { recursive: true });
+    let targetDir = process.env.STORAGE_DIR || path.join(process.cwd(), 'uploads');
+    try {
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+    } catch (err) {
+      console.warn(`Could not initialize STORAGE_DIR "${targetDir}". Falling back to default "./uploads":`, err);
+      targetDir = path.join(process.cwd(), 'uploads');
+      if (!fs.existsSync(targetDir)) {
+        try { fs.mkdirSync(targetDir, { recursive: true }); } catch (_) {}
+      }
     }
+    this.uploadDir = targetDir;
     
     // Configurable base URL (e.g. http://localhost:8080/media)
     // Default to /media for relative paths
