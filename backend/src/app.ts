@@ -22,13 +22,35 @@ const allowedOrigins = [
   ...(env.ADMIN_CORS_ORIGIN ? env.ADMIN_CORS_ORIGIN.split(',').map((s) => s.trim()) : []),
   'https://new.chahfoundation.com',
   'https://chahfoundation.com',
+  'https://www.chahfoundation.com',
   'https://admin.chahfoundation.com',
+  'http://new.chahfoundation.com',
+  'http://chahfoundation.com',
+  'http://admin.chahfoundation.com',
 ].filter((val, idx, arr) => Boolean(val) && arr.indexOf(val) === idx);
 const devOrigins = [...allowedOrigins, 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:3002'];
 
 app.use(cors({ 
-  origin: env.NODE_ENV === 'production' ? allowedOrigins : devOrigins,
-  credentials: true 
+  origin: (origin: string | undefined, callback: (err: Error | null, origin?: any) => void) => {
+    if (!origin) return callback(null, true);
+    const activeOrigins = env.NODE_ENV === 'production' ? allowedOrigins : devOrigins;
+    if (activeOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    try {
+      const parsedUrl = new URL(origin);
+      if (parsedUrl.hostname === 'chahfoundation.com' || parsedUrl.hostname.endsWith('.chahfoundation.com')) {
+        return callback(null, true);
+      }
+    } catch {
+      // ignore
+    }
+    return callback(new Error(`Origin ${origin} not allowed by CORS`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  optionsSuccessStatus: 200,
 }));
 app.use(cookieParser());
 

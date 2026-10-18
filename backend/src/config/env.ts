@@ -6,7 +6,7 @@ dotenv.config();
 
 const baseSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('production'),
-  PORT: z.string().default(process.env.PORT || '44000'),
+  PORT: z.string().default(process.env.PORT || '5000'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   FRONTEND_URL: z.string().default('https://new.chahfoundation.com,https://chahfoundation.com'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters long for production safety').default('chah_foundation_production_jwt_secret_key_2026_super_secure'),
