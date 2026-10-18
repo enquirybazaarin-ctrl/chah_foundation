@@ -27,6 +27,9 @@ const allowedOrigins = [
   'http://new.chahfoundation.com',
   'http://chahfoundation.com',
   'http://admin.chahfoundation.com',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
 ].filter((val, idx, arr) => Boolean(val) && arr.indexOf(val) === idx);
 const devOrigins = [...allowedOrigins, 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:3002'];
 
