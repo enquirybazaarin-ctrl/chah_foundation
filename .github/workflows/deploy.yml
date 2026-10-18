@@ -94,6 +94,15 @@ jobs:
             # Deploy Backend
             echo "📦 Deploying Backend..."
             cd backend
+
+            # Preserve persistent uploads outside repo to prevent image loss on git pull
+            mkdir -p ../../chah_persistent_uploads
+            if [ ! -L "uploads" ] && [ -d "uploads" ]; then
+              cp -rn uploads/* ../../chah_persistent_uploads/ 2>/dev/null || true
+              rm -rf uploads
+            fi
+            ln -sfn ../../chah_persistent_uploads uploads
+
             npm install --production=false
             npx prisma generate
             npx prisma migrate deploy

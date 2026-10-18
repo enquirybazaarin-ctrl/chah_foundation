@@ -8,7 +8,7 @@ export class LocalDiskStorageProvider implements StorageProvider {
   private readonly baseUrl: string;
 
   constructor() {
-    this.uploadDir = path.join(process.cwd(), 'uploads');
+    this.uploadDir = process.env.STORAGE_DIR || path.join(process.cwd(), 'uploads');
     // Ensure the uploads directory exists
     if (!fs.existsSync(this.uploadDir)) {
       fs.mkdirSync(this.uploadDir, { recursive: true });

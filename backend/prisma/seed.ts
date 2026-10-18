@@ -247,6 +247,60 @@ async function main() {
   }
 
   // ==========================================
+  // SEED OUR ENDEAVOUR IMPACT METRICS & SETTINGS
+  // ==========================================
+  console.log('📊 Upserting Our Endeavour Impact Metrics...');
+
+  const endeavourMetrics = [
+    { metric_name: 'Meals Served', metric_value: '2.5M+', icon: 'Utensils' },
+    { metric_name: 'People Reached', metric_value: '10,000+', icon: 'Users' },
+    { metric_name: 'Schools & Communities', metric_value: '172+', icon: 'School' },
+    { metric_name: 'Healthcare Camps', metric_value: '350+', icon: 'Hospital' }
+  ];
+
+  for (const m of endeavourMetrics) {
+    const existing = await prisma.impactMetric.findFirst({ where: { metric_name: m.metric_name } });
+    if (existing) {
+      await prisma.impactMetric.update({
+        where: { id: existing.id },
+        data: m
+      });
+    } else {
+      await prisma.impactMetric.create({ data: m });
+    }
+  }
+
+  // Clean up any rogue cron metrics ('Funds Raised', 'Active Donors')
+  await prisma.impactMetric.deleteMany({
+    where: { metric_name: { in: ['Funds Raised', 'Active Donors'] } }
+  });
+
+  await prisma.setting.upsert({
+    where: { setting_key: 'our_endeavour_section' },
+    update: {
+      setting_value: JSON.stringify({
+        badge: 'OUR IMPACT',
+        heading: 'Our Endeavour As NGO',
+        description: 'At our core, we believe a food-secure society helps unlock its true potential. We are not only nourishing bodies but also opening doors to better education, health and prosperity for fellow citizens. Together, we can pave the way for a future where every vulnerable has an equal chance to thrive.',
+        cta_text: 'Join Our Cause',
+        cta_link: '/donate',
+        updated_as_on: '04/10/2026'
+      })
+    },
+    create: {
+      setting_key: 'our_endeavour_section',
+      setting_value: JSON.stringify({
+        badge: 'OUR IMPACT',
+        heading: 'Our Endeavour As NGO',
+        description: 'At our core, we believe a food-secure society helps unlock its true potential. We are not only nourishing bodies but also opening doors to better education, health and prosperity for fellow citizens. Together, we can pave the way for a future where every vulnerable has an equal chance to thrive.',
+        cta_text: 'Join Our Cause',
+        cta_link: '/donate',
+        updated_as_on: '04/10/2026'
+      })
+    }
+  });
+
+  // ==========================================
   // SEED DONORS & DONATIONS (Financial Safety)
   // ==========================================
   console.log('💰 Upserting Dev Fixture Donors & Donations...');

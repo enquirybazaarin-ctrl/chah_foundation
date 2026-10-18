@@ -78,7 +78,14 @@ const CATEGORY_ORDER: Record<string, number> = {
 
 export function OurEndeavour({ data }: { data?: OurEndeavourSectionData | null }) {
   const section = data?.section || DEFAULT_SECTION;
-  const rawMetrics = (data?.metrics && data.metrics.length > 0) ? data.metrics : DEFAULT_METRICS;
+
+  // Filter out any legacy or rogue cron metrics ('Funds Raised', 'Active Donors')
+  const validApiMetrics = (data?.metrics || []).filter(
+    (m) => m && m.metric_name && m.metric_name !== 'Funds Raised' && m.metric_name !== 'Active Donors'
+  );
+
+  // If DB metrics are present and valid (at least 4 core metrics), use them; otherwise fall back to DEFAULT_METRICS
+  const rawMetrics = validApiMetrics.length >= 4 ? validApiMetrics : DEFAULT_METRICS;
   const metrics = [...rawMetrics].sort((a, b) => {
     const orderA = CATEGORY_ORDER[getMetricCategory(a.metric_name)] || 99;
     const orderB = CATEGORY_ORDER[getMetricCategory(b.metric_name)] || 99;

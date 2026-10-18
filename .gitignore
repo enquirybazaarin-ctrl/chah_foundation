@@ -13,6 +13,7 @@ uploads/
 storage/
 
 *.sql
+!backend/scripts/*.sql
 *.zip
 backend_deploy.zip
 

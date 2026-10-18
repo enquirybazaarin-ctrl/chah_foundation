@@ -40,11 +40,27 @@ interface HeroSliderProps {
 
 export function HeroSlider({ slides: propSlides }: HeroSliderProps = {}) {
   const effectiveSlides = (propSlides && propSlides.length > 0) ? propSlides : DEFAULT_SLIDES;
+  const apiBase = (process.env.NEXT_PUBLIC_API_URL || "https://api.chahfoundation.com").replace(/\/$/, "");
 
   const activeSlides = effectiveSlides.map(slide => {
-    let img = slide.image_url || slide.img || "";
+    let img = (slide.image_url || slide.img || "").trim();
+
+    // 1. Resolve relative /media paths
+    if (img.startsWith("/media/")) {
+      img = `${apiBase}${img}`;
+    }
+
+    // 2. Replace localhost / dev origins
     if (img.includes("localhost:5000")) {
-      img = img.replace("http://localhost:5000", process.env.NEXT_PUBLIC_API_URL || "https://api.chahfoundation.com");
+      img = img.replace("http://localhost:5000", apiBase);
+    }
+    if (img.includes("127.0.0.1:5000")) {
+      img = img.replace("http://127.0.0.1:5000", apiBase);
+    }
+
+    // 3. Upgrade insecure http to https for production API
+    if (img.startsWith("http://api.chahfoundation.com")) {
+      img = img.replace("http://api.chahfoundation.com", "https://api.chahfoundation.com");
     }
 
     // Check if this is one of the dummy seed slides from the backend
@@ -148,6 +164,7 @@ export function HeroSlider({ slides: propSlides }: HeroSliderProps = {}) {
                 const target = e.currentTarget;
                 const fallback = DEFAULT_SLIDES[index % DEFAULT_SLIDES.length].image_url!;
                 if (target.src !== fallback) {
+                  console.warn(`[HeroSlider] Banner image not reachable: ${bgImg}. Falling back to default.`);
                   target.src = fallback;
                 }
               }}

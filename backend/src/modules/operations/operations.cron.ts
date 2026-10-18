@@ -199,31 +199,27 @@ export const initCronJobs = () => {
       
       const amount = totalDonations._sum.amount || 0;
       const formattedAmount = `₹${(Number(amount) / 100000).toFixed(2)}L+`; // e.g. ₹5.50L+
-
-      await prisma.impactMetric.upsert({
-        where: { id: 1 }, // Assuming ID 1 is "Funds Raised"
-        update: { metric_value: formattedAmount },
-        create: {
-          id: 1,
-          metric_name: 'Funds Raised',
-          metric_value: formattedAmount,
-          icon: 'Heart'
-        }
-      });
-      
-      // We can also sync "Total Donors" etc.
       const totalDonors = await prisma.donor.count({ where: { status: 'ACTIVE' } });
-      await prisma.impactMetric.upsert({
-        where: { id: 2 },
-        update: { metric_value: `${totalDonors}+` },
+
+      // Save aggregate live stats safely to settings table (does not corrupt CMS impact metrics)
+      await prisma.setting.upsert({
+        where: { setting_key: 'system_donation_stats' },
+        update: {
+          setting_value: JSON.stringify({
+            total_raised: formattedAmount,
+            active_donors: totalDonors,
+            updated_at: new Date().toISOString()
+          })
+        },
         create: {
-          id: 2,
-          metric_name: 'Active Donors',
-          metric_value: `${totalDonors}+`,
-          icon: 'Users'
+          setting_key: 'system_donation_stats',
+          setting_value: JSON.stringify({
+            total_raised: formattedAmount,
+            active_donors: totalDonors,
+            updated_at: new Date().toISOString()
+          })
         }
       });
-      
     } catch (error) {
       console.error('Impact Metric Sync Job failed:', error);
     }

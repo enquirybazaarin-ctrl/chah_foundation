@@ -41,7 +41,8 @@ app.use(morgan(env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 
 // Serve uploaded static files
 import path from 'path';
-app.use('/media', express.static(path.join(process.cwd(), 'uploads')));
+const uploadsDir = process.env.STORAGE_DIR || path.join(process.cwd(), 'uploads');
+app.use('/media', express.static(uploadsDir));
 
 // Base API Routing Foundation
 const apiRouter = express.Router();
