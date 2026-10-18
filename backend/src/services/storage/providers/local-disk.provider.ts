@@ -3,24 +3,29 @@ import path from 'path';
 import { StorageProvider, UploadFileOptions, UploadFileResult } from '../storage.interface';
 import { env } from '../../../config/env';
 
+export function getStorageDirectory(): string {
+  let targetDir = process.env.STORAGE_DIR || path.join(process.cwd(), 'uploads');
+  try {
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+    return targetDir;
+  } catch (err) {
+    console.warn(`Could not initialize STORAGE_DIR "${targetDir}". Falling back to default "./uploads":`, err);
+    targetDir = path.join(process.cwd(), 'uploads');
+    if (!fs.existsSync(targetDir)) {
+      try { fs.mkdirSync(targetDir, { recursive: true }); } catch (_) {}
+    }
+    return targetDir;
+  }
+}
+
 export class LocalDiskStorageProvider implements StorageProvider {
   private readonly uploadDir: string;
   private readonly baseUrl: string;
 
   constructor() {
-    let targetDir = process.env.STORAGE_DIR || path.join(process.cwd(), 'uploads');
-    try {
-      if (!fs.existsSync(targetDir)) {
-        fs.mkdirSync(targetDir, { recursive: true });
-      }
-    } catch (err) {
-      console.warn(`Could not initialize STORAGE_DIR "${targetDir}". Falling back to default "./uploads":`, err);
-      targetDir = path.join(process.cwd(), 'uploads');
-      if (!fs.existsSync(targetDir)) {
-        try { fs.mkdirSync(targetDir, { recursive: true }); } catch (_) {}
-      }
-    }
-    this.uploadDir = targetDir;
+    this.uploadDir = getStorageDirectory();
     
     // Configurable base URL (e.g. http://localhost:8080/media)
     // Default to /media for relative paths
