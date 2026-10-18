@@ -61,6 +61,14 @@ export default function CampaignCategoryHubView({ config, sectionData }: Campaig
     }).format(amount);
   };
 
+  const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://api.chahfoundation.com').replace(/\/$/, '');
+  const resolveMediaUrl = (url?: string | null): string => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    if (url.startsWith('/')) return `${API_URL}${url}`;
+    return `${API_URL}/${url}`;
+  };
+
   const getEffectiveDonationAmount = () => {
     if (customAmount && !isNaN(Number(customAmount)) && Number(customAmount) > 0) {
       return Number(customAmount);
@@ -180,7 +188,7 @@ export default function CampaignCategoryHubView({ config, sectionData }: Campaig
               <div className="lg:col-span-5 relative">
                 <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100 relative shadow-sm">
                   <img
-                    src={featured.featured_image_url || config.heroImage}
+                    src={resolveMediaUrl(featured.featured_image_url) || config.heroImage}
                     alt={featured.title}
                     className="w-full h-full object-cover"
                   />
@@ -302,7 +310,7 @@ export default function CampaignCategoryHubView({ config, sectionData }: Campaig
                   <div>
                     <div className="aspect-[16/10] w-full overflow-hidden relative bg-slate-100">
                       <img
-                        src={item.featured_image_url || config.heroImage}
+                        src={resolveMediaUrl(item.featured_image_url) || config.heroImage}
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"

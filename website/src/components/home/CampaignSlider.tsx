@@ -42,6 +42,14 @@ export function CampaignSlider({ campaigns }: { campaigns: FeaturedCampaignItem[
     }
   };
 
+  const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://api.chahfoundation.com').replace(/\/$/, '');
+  const resolveMediaUrl = (url?: string | null): string => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    if (url.startsWith('/')) return `${API_URL}${url}`;
+    return `${API_URL}/${url}`;
+  };
+
   if (!campaigns || campaigns.length === 0) return null;
 
   return (
@@ -60,10 +68,11 @@ export function CampaignSlider({ campaigns }: { campaigns: FeaturedCampaignItem[
           const raised = parseFloat(campaign.raised_amount) || 0;
           const target = campaign.target_amount ? parseFloat(campaign.target_amount) : 0;
           const progress = target > 0 ? Math.min(Math.round((raised / target) * 100), 100) : 0;
-          const cardImg =
+          const rawImg =
             campaign.featured_image?.url ||
             campaign.featured_image_url ||
             "https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=800&auto=format&fit=crop";
+          const cardImg = resolveMediaUrl(rawImg);
 
           return (
             <Link

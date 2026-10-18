@@ -73,6 +73,14 @@ const DEFAULT_FALLBACK_CAMPAIGNS = [
   },
 ];
 
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://api.chahfoundation.com').replace(/\/$/, '');
+function resolveMediaUrl(url?: string | null): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/')) return `${API_URL}${url}`;
+  return `${API_URL}/${url}`;
+}
+
 export default async function CampaignsPage() {
   const liveCampaigns = await getCampaigns(1, 30).catch(() => []);
   const campaigns = (liveCampaigns && liveCampaigns.length > 0) ? liveCampaigns : DEFAULT_FALLBACK_CAMPAIGNS;
@@ -102,15 +110,17 @@ export default async function CampaignsPage() {
             const raised = parseFloat(campaign.raised_amount) || 0;
             const target = campaign.target_amount ? parseFloat(campaign.target_amount) : 0;
             const progress = target > 0 ? Math.min(Math.round((raised / target) * 100), 100) : 0;
-            const imgUrl = campaign.featured_image?.url || campaign.featured_image_url || "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=800&auto=format&fit=crop";
+            const rawImg = campaign.featured_image?.url || campaign.featured_image_url || "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=800&auto=format&fit=crop";
+            const imgUrl = resolveMediaUrl(rawImg);
+            const campaignUrl = `/campaigns/${campaign.slug || campaign.id}`;
 
             return (
               <div
                 key={campaign.id}
                 className="group flex flex-col rounded-2xl border border-gray-200/90 bg-white overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
               >
-                {/* Natural Image */}
-                <div className="relative aspect-[4/3] w-full bg-gray-100 overflow-hidden">
+                {/* Natural Image Link */}
+                <Link href={campaignUrl} className="block relative aspect-[4/3] w-full bg-gray-100 overflow-hidden cursor-pointer">
                   <img
                     src={imgUrl}
                     alt={campaign.title}
@@ -130,7 +140,7 @@ export default async function CampaignsPage() {
                       </span>
                     </div>
                   )}
-                </div>
+                </Link>
 
                 {/* Body: Person -> Story -> Need -> Progress -> Action */}
                 <div className="p-6 flex-1 flex flex-col justify-between">
@@ -142,9 +152,11 @@ export default async function CampaignsPage() {
                         {campaign.location ? ` • ${campaign.location}` : ""}
                       </p>
                     )}
-                    <h2 className="font-heading text-lg font-bold text-gray-900 group-hover:text-emerald-700 transition-colors line-clamp-2 leading-snug mb-2">
-                      {campaign.title}
-                    </h2>
+                    <Link href={campaignUrl} className="block group/link">
+                      <h2 className="font-heading text-lg font-bold text-gray-900 group-hover/link:text-emerald-700 transition-colors line-clamp-2 leading-snug mb-2">
+                        {campaign.title}
+                      </h2>
+                    </Link>
                     <p className="text-gray-500 text-xs sm:text-sm line-clamp-2 leading-relaxed mb-4">
                       {campaign.short_description || campaign.description || "Support this urgent cause with essential supplies and assistance."}
                     </p>

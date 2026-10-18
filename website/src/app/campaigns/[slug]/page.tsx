@@ -3,7 +3,8 @@ import { Metadata } from 'next';
 import { getCampaignBySlug, getCampaignSupporters } from '@/lib/api';
 import CampaignDetailView from '@/components/campaigns/CampaignDetailView';
 import CampaignCategoryHubView from '@/components/campaigns/CampaignCategoryHubView';
-import { getCampaignCategory, CAMPAIGN_CATEGORIES } from '@/lib/campaign-categories-data';
+import { getCampaignCategory } from '@/lib/campaign-categories-data';
+import { getFallbackCampaign } from '@/lib/fallback-campaigns';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -30,21 +31,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   // 2. Otherwise check for individual beneficiary campaign
+  let campaign: any = null;
   try {
-    const campaign = await getCampaignBySlug(slug);
-    if (campaign) {
-      return {
-        title: `${campaign.title} | Active Fundraiser | CHAH Foundation`,
-        description: campaign.short_description || campaign.title,
-        openGraph: {
-          title: campaign.title,
-          description: campaign.short_description || campaign.title,
-          images: campaign.featured_image_url ? [{ url: campaign.featured_image_url }] : []
-        }
-      };
-    }
+    campaign = await getCampaignBySlug(slug);
   } catch {
-    // ignore
+    campaign = null;
+  }
+
+  if (!campaign) {
+    campaign = getFallbackCampaign(slug);
+  }
+
+  if (campaign) {
+    return {
+      title: `${campaign.title} | Active Fundraiser | CHAH Foundation`,
+      description: campaign.short_description || campaign.title,
+      openGraph: {
+        title: campaign.title,
+        description: campaign.short_description || campaign.title,
+        images: campaign.featured_image_url ? [{ url: campaign.featured_image_url }] : []
+      }
+    };
   }
 
   return { title: 'Campaign | CHAH Foundation India' };
@@ -83,15 +90,22 @@ export default async function CampaignPage({ params }: PageProps) {
   }
 
   // 2. Individual Beneficiary Campaign Story Page
-  let campaign;
-  let supporters = [];
+  let campaign: any = null;
+  let supporters: any[] = [];
+
+  // Try live database first
   try {
     campaign = await getCampaignBySlug(slug);
     if (campaign && campaign.id) {
       supporters = await getCampaignSupporters(campaign.id).catch(() => []);
     }
-  } catch (error) {
+  } catch {
     campaign = null;
+  }
+
+  // Fallback to rich predefined campaign if not in live database yet
+  if (!campaign) {
+    campaign = getFallbackCampaign(slug);
   }
 
   if (!campaign) {

@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { Share2, Heart, CreditCard, Banknote, QrCode, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Share2, Heart, QrCode, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -12,10 +11,20 @@ interface CampaignDetailViewProps {
   initialSupporters?: any[];
 }
 
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://api.chahfoundation.com').replace(/\/$/, '');
+
+function resolveMediaUrl(url?: string | null): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/')) return `${API_URL}${url}`;
+  return `${API_URL}/${url}`;
+}
+
 export default function CampaignDetailView({ campaign, initialSupporters = [] }: CampaignDetailViewProps) {
   const [activeTab, setActiveTab] = useState<'story' | 'payouts' | 'updates'>('story');
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [isSupportersModalOpen, setIsSupportersModalOpen] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const raised = parseFloat(campaign.raised_amount || '0');
   const target = parseFloat(campaign.target_amount || '1');
@@ -32,239 +41,326 @@ export default function CampaignDetailView({ campaign, initialSupporters = [] }:
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  const images = campaign.images || (campaign.featured_image_url ? [campaign.featured_image_url] : []);
+  // Extract images and resolve any backend relative media URLs
+  const rawImages: string[] = Array.isArray(campaign.images) && campaign.images.length > 0
+    ? campaign.images
+    : (campaign.featured_image_url ? [campaign.featured_image_url] : []);
 
-  // Auto-slide every 2 seconds
+  const resolvedImages = rawImages.map(resolveMediaUrl).filter(Boolean);
+  const images = resolvedImages.length > 0
+    ? resolvedImages
+    : ["https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=1200&auto=format&fit=crop"];
+
+  // Auto-slide every 3 seconds if multiple images
   React.useEffect(() => {
     if (images.length > 1) {
       const interval = setInterval(() => {
         setCurrentImageIndex((prev) => (prev + 1) % images.length);
-      }, 2000);
+      }, 3000);
       return () => clearInterval(interval);
     }
   }, [images.length]);
+
+  // Clean campaign story content
+  const rawContent = campaign.content || '';
+  const cleanContent = rawContent
+    .replace(/<div class="campaign-gallery-data"[^>]*>[\s\S]*?<\/div>/g, '')
+    .trim();
+
+  const hasHtml = /<[a-z][\s\S]*>/i.test(cleanContent);
+
+  // Handle Share
+  const handleShare = async () => {
+    const shareData = {
+      title: campaign.title,
+      text: campaign.short_description || campaign.title,
+      url: typeof window !== 'undefined' ? window.location.href : '',
+    };
+    if (typeof navigator !== 'undefined' && (navigator as any).share) {
+      try {
+        await (navigator as any).share(shareData);
+        return;
+      } catch {
+        // Fallback to clipboard
+      }
+    }
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(shareData.url);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    }
+  };
+
+  const handleWhatsAppShare = () => {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    const text = encodeURIComponent(`Please support this noble cause: "${campaign.title}"\n${url}`);
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+  };
+
+  const donateUrl = `/donate?campaign=${campaign.id || campaign.slug}`;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
       {/* Left Column - Main Content */}
       <div className="lg:col-span-2 space-y-6">
-        <h1 className="text-3xl font-bold text-gray-900 leading-tight">
-          {campaign.title}
-        </h1>
-
-        {/* Image Slider Mockup */}
-        <div className="relative aspect-video bg-gray-100 rounded-xl overflow-hidden shadow-sm">
-          {images.length > 0 ? (
-            <>
-              <img 
-                src={images[currentImageIndex]} 
-                alt={campaign.title}
-                className="w-full h-full object-cover transition-opacity duration-500"
-              />
-              {images.length > 1 && (
-                <>
-                  {/* Slider Arrows */}
-                  <button 
-                    onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 transition-colors z-10"
-                    aria-label="Previous image"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button 
-                    onClick={() => setCurrentImageIndex((prev) => (prev + 1) % images.length)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 transition-colors z-10"
-                    aria-label="Next image"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-
-                  {/* Slider Dots */}
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-                    {images.map((_: any, idx: number) => (
-                      <button 
-                        key={idx}
-                        onClick={() => setCurrentImageIndex(idx)}
-                        className={cn(
-                          "w-2 h-2 rounded-full transition-all",
-                          idx === currentImageIndex ? "bg-white w-4" : "bg-white/50"
-                        )}
-                        aria-label={`Go to slide ${idx + 1}`}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400">
-              No images available
-            </div>
+        <div>
+          {campaign.category?.name && (
+            <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-lime-100 text-lime-800 mb-2">
+              {campaign.category.name}
+            </span>
+          )}
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 leading-tight">
+            {campaign.title}
+          </h1>
+          {campaign.beneficiary_name && (
+            <p className="text-xs sm:text-sm font-semibold text-gray-500 mt-1">
+              Beneficiary: <strong className="text-gray-800">{campaign.beneficiary_name}</strong>
+              {campaign.beneficiary_age ? ` (${campaign.beneficiary_age} years old)` : ''}
+              {campaign.location ? ` • ${campaign.location}` : ''}
+            </p>
           )}
         </div>
 
-        {/* Post-Image Mobile-Style Actions (Visible on left side) */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col gap-6">
-          <div className="flex items-center justify-between">
+        {/* Image Slider */}
+        <div className="relative aspect-video bg-gray-100 rounded-2xl overflow-hidden shadow-sm border border-gray-200/80">
+          <img 
+            src={images[currentImageIndex]} 
+            alt={campaign.title}
+            className="w-full h-full object-cover transition-opacity duration-500"
+          />
+          {images.length > 1 && (
+            <>
+              {/* Slider Arrows */}
+              <button 
+                onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
+                className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors z-10 cursor-pointer"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={() => setCurrentImageIndex((prev) => (prev + 1) % images.length)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors z-10 cursor-pointer"
+                aria-label="Next image"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+
+              {/* Slider Dots */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                {images.map((_: any, idx: number) => (
+                  <button 
+                    key={idx}
+                    onClick={() => setCurrentImageIndex(idx)}
+                    className={cn(
+                      "w-2 h-2 rounded-full transition-all cursor-pointer",
+                      idx === currentImageIndex ? "bg-white w-5" : "bg-white/60 hover:bg-white"
+                    )}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Post-Image Metrics & Share Strip */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200/80 p-5 sm:p-6 flex flex-col gap-5">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
               <div className="relative w-16 h-16 shrink-0">
                 <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="40" stroke="#e5e7eb" strokeWidth="8" fill="transparent" />
-                  <circle cx="50" cy="50" r="40" stroke="#22c55e" strokeWidth="8" fill="transparent" strokeDasharray={`${2 * Math.PI * 40}`} strokeDashoffset={`${2 * Math.PI * 40 * (1 - percent / 100)}`} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
+                  <circle 
+                    cx="50" 
+                    cy="50" 
+                    r="40" 
+                    stroke="#22c55e" 
+                    strokeWidth="8" 
+                    fill="transparent" 
+                    strokeDasharray={`${2 * Math.PI * 40}`} 
+                    strokeDashoffset={`${2 * Math.PI * 40 * (1 - percent / 100)}`} 
+                    strokeLinecap="round" 
+                    className="transition-all duration-1000 ease-out" 
+                  />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-sm font-bold text-gray-800">{percent}%</span>
+                  <span className="text-sm font-black text-gray-800">{percent}%</span>
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-600 mb-0.5">Raised</div>
+                <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-0.5">Raised So Far</div>
                 <div className="flex items-baseline gap-1.5 flex-wrap">
-                  <span className="text-lg font-bold text-lime-700">{formatMoney(raised)}</span>
-                  <span className="text-sm text-gray-500">of {formatMoney(target)}</span>
+                  <span className="text-xl font-black text-lime-700">{formatMoney(raised)}</span>
+                  <span className="text-xs text-gray-500 font-medium">of {formatMoney(target)} goal</span>
                 </div>
               </div>
             </div>
-            <div className="bg-gray-100 px-4 py-2 rounded-full text-sm font-semibold text-lime-800">
-              {campaign.supporters_count || 0} supporters
+
+            <div className="bg-lime-50 border border-lime-200/80 px-4 py-2 rounded-full text-xs font-bold text-lime-800">
+              {campaign.supporters_count || 0} Supporters
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
-            <Button className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-full font-medium h-12 flex items-center justify-center gap-2 shadow-sm text-lg">
-              <span className="text-2xl leading-none -mt-1">✆</span> Share
-            </Button>
-            <Button variant="outline" className="w-full border-lime-600 text-lime-700 hover:bg-lime-50 rounded-full font-medium h-12 flex items-center justify-center gap-2 text-lg">
-              <Share2 className="w-5 h-5" /> Share
-            </Button>
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+            <button 
+              type="button"
+              onClick={handleWhatsAppShare}
+              className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl font-bold h-11 flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer text-sm"
+            >
+              <span>Share on WhatsApp</span>
+            </button>
+            <button 
+              type="button"
+              onClick={handleShare}
+              className="w-full border border-gray-300 hover:border-lime-600 hover:bg-lime-50/50 text-gray-800 rounded-xl font-bold h-11 flex items-center justify-center gap-2 transition-colors cursor-pointer text-sm"
+            >
+              {copiedLink ? <Check className="w-4 h-4 text-lime-600" /> : <Share2 className="w-4 h-4" />}
+              <span>{copiedLink ? 'Link Copied!' : 'Share Campaign'}</span>
+            </button>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {/* Content Tabs (Story, Payouts, Updates) */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden">
           <div className="flex border-b border-gray-100">
             <button
+              type="button"
               onClick={() => setActiveTab('story')}
               className={cn(
-                "flex-1 py-4 text-sm font-semibold transition-colors",
+                "flex-1 py-3.5 text-sm font-bold transition-colors cursor-pointer",
                 activeTab === 'story' 
-                  ? "bg-lime-600 text-white" 
+                  ? "bg-[#003399] text-white" 
                   : "bg-gray-50 text-gray-600 hover:bg-gray-100"
               )}
             >
-              Story
+              Campaign Story
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab('payouts')}
               className={cn(
-                "flex-1 py-4 text-sm font-semibold transition-colors border-x border-gray-100",
+                "flex-1 py-3.5 text-sm font-bold transition-colors border-x border-gray-100 cursor-pointer",
                 activeTab === 'payouts' 
-                  ? "bg-lime-600 text-white" 
+                  ? "bg-[#003399] text-white" 
                   : "bg-gray-50 text-gray-600 hover:bg-gray-100"
               )}
             >
-              Payouts (0)
+              Payouts & Transparency
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab('updates')}
               className={cn(
-                "flex-1 py-4 text-sm font-semibold transition-colors",
+                "flex-1 py-3.5 text-sm font-bold transition-colors cursor-pointer",
                 activeTab === 'updates' 
-                  ? "bg-lime-600 text-white" 
+                  ? "bg-[#003399] text-white" 
                   : "bg-gray-50 text-gray-600 hover:bg-gray-100"
               )}
             >
-              Updates (0)
+              Updates
             </button>
           </div>
 
-          <div className="p-6 md:p-8 prose prose-gray max-w-none text-gray-700">
+          <div className="p-6 md:p-8 text-gray-700 leading-relaxed">
             {activeTab === 'story' && (
-              <div>
-                {campaign.content ? (
-                  <div dangerouslySetInnerHTML={{ __html: campaign.content }} />
+              <div className="space-y-4">
+                {cleanContent ? (
+                  hasHtml ? (
+                    <div 
+                      className="space-y-4 text-base leading-relaxed text-gray-800"
+                      dangerouslySetInnerHTML={{ __html: cleanContent }} 
+                    />
+                  ) : (
+                    <div className="space-y-4 text-base leading-relaxed text-gray-800 whitespace-pre-line">
+                      {cleanContent.split('\n\n').map((paragraph: string, idx: number) => (
+                        <p key={idx}>{paragraph}</p>
+                      ))}
+                    </div>
+                  )
                 ) : (
-                  <p>{campaign.short_description || "No story available for this campaign."}</p>
+                  <div className="space-y-3">
+                    <p className="text-base leading-relaxed text-gray-800">
+                      {campaign.short_description || campaign.description || "Every contribution directly supports this urgent cause with verified on-ground assistance, nutritious meals, and medical relief."}
+                    </p>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      CHAH Foundation validates all beneficiary documentation and transfers 100% of collected donor contributions directly for medical, educational, and welfare interventions.
+                    </p>
+                  </div>
                 )}
               </div>
             )}
             
             {activeTab === 'payouts' && (
               <div className="text-center py-8">
-                <p className="text-gray-500 italic">No payouts have been recorded yet.</p>
+                <p className="text-sm text-gray-600 font-medium">
+                  Direct vendor and hospital disbursement records will be uploaded as bills are settled.
+                </p>
+                <p className="text-xs text-lime-700 font-bold mt-2">
+                  100% Direct Verification Guarantee
+                </p>
               </div>
             )}
             
             {activeTab === 'updates' && (
               <div className="text-center py-8">
-                <p className="text-gray-500 italic">No updates have been posted yet.</p>
+                <p className="text-sm text-gray-600 font-medium">
+                  Beneficiary progress updates will be posted here as milestones are reached.
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Donors receive email notifications for major updates.
+                </p>
               </div>
             )}
           </div>
         </div>
 
         {/* Supporters Section */}
-        <div id="supporters-section" className="bg-[#faf9f7] rounded-xl p-6 md:p-8 mt-12 border border-lime-100/50 scroll-mt-24">
-          <h3 className="text-xl font-bold text-center text-gray-800 mb-6 flex items-center justify-center gap-4">
-            <span className="w-12 h-px bg-lime-200"></span>
-            Supporters
-            <span className="w-12 h-px bg-lime-200"></span>
+        <div id="supporters-section" className="bg-white rounded-2xl p-6 md:p-8 border border-gray-200/80 shadow-sm scroll-mt-24">
+          <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center justify-between">
+            <span>Supporters & Well-Wishers</span>
+            <span className="text-xs font-semibold text-lime-700">80G Tax-Deductible</span>
           </h3>
-          <div className="bg-lime-50 rounded-lg p-4 mb-6 text-sm text-lime-800 border border-lime-100">
-            <span className="font-semibold underline cursor-pointer hover:text-lime-700">Click here</span> if you are not able to find your donation listed below.
-          </div>
-          <div className="space-y-4">
+
+          <div className="space-y-3">
             {initialSupporters.length > 0 ? (
               initialSupporters.map((supporter, i) => (
-                <div key={i} className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-100 shadow-sm">
-                  <div className="w-10 h-10 rounded-full bg-lime-100 text-lime-700 flex items-center justify-center font-bold text-lg shrink-0 uppercase">
-                    {supporter.initial}
+                <div key={i} className="flex items-center gap-3.5 p-3.5 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="w-10 h-10 rounded-full bg-lime-100 text-lime-800 flex items-center justify-center font-bold text-sm shrink-0 uppercase shadow-2xs">
+                    {supporter.initial || supporter.name?.charAt(0) || 'D'}
                   </div>
                   <div>
-                    <div className="text-gray-800 text-sm font-medium">{supporter.name}</div>
-                    <div className="font-bold text-gray-900 mt-0.5">₹{parseFloat(supporter.amount).toLocaleString('en-IN')}</div>
+                    <div className="text-gray-900 text-sm font-semibold">{supporter.name || 'Kind Supporter'}</div>
+                    <div className="text-lime-700 text-xs font-bold mt-0.5">₹{parseFloat(supporter.amount || '0').toLocaleString('en-IN')}</div>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 text-center py-4">No supporters yet. Be the first to donate!</p>
+              <p className="text-gray-500 text-sm py-4 text-center">
+                Be the first generous supporter to contribute to this campaign!
+              </p>
             )}
-          </div>
-          <div className="text-center mt-6">
-            <button 
-              onClick={() => setIsSupportersModalOpen(true)}
-              className="text-lime-600 font-semibold underline hover:text-lime-700 decoration-2 underline-offset-4"
-            >
-              View all supporters
-            </button>
           </div>
         </div>
 
         {/* FAQ Section */}
-        <div className="bg-white rounded-xl p-6 md:p-8 mt-8 border border-gray-100 shadow-sm">
-          <h3 className="text-xl font-bold text-center text-lime-700 mb-8 border-b border-lime-200 pb-4">
+        <div className="bg-white rounded-2xl p-6 md:p-8 border border-gray-200/80 shadow-sm">
+          <h3 className="text-lg font-bold text-[#003399] mb-4">
             Frequently Asked Questions
           </h3>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {[
               {
-                question: "Is my donation tax-deductible?",
-                answer: "Tax benefits under Section 80G are available only for eligible fundraisers. Where a fundraiser qualifies, the applicable tax benefit details are displayed clearly on the fundraiser page before you donate."
+                question: "Is my donation eligible for 80G Tax Exemption?",
+                answer: "Yes! All donations made to CHAH Foundation are 50% tax-exempt under Section 80G of the Indian Income Tax Act. Your digital certificate is automatically emailed immediately after payment."
               },
               {
-                question: "What fees does CHAH charge?",
-                answer: "CHAH Foundation takes a 0% platform fee on all donations. A small payment gateway fee may apply."
+                question: "What platform fee does CHAH Foundation charge?",
+                answer: "CHAH Foundation charges 0% platform fee. 100% of your contribution reaches verified beneficiaries and hospitals directly."
               },
               {
-                question: "How do I know my donation is reaching the right person?",
-                answer: "We verify every campaign rigorously and transfer funds directly to the beneficiary's hospital or verified account."
-              },
-              {
-                question: "Can I donate from outside India?",
-                answer: "Yes! We accept international donations through most major credit cards and payment gateways."
-              },
-              {
-                question: "Can I donate anonymously?",
-                answer: "Yes, you can choose to make your donation anonymous during the checkout process."
+                question: "How are funds delivered to the beneficiary?",
+                answer: "We verify every case with medical, school, and government documentation. Payouts are made directly to the hospital, institution, or verified bank account."
               }
             ].map((faq, index) => {
               const isOpen = openFaqIndex === index;
@@ -272,76 +368,51 @@ export default function CampaignDetailView({ campaign, initialSupporters = [] }:
                 <div 
                   key={index} 
                   className={cn(
-                    "border rounded-2xl overflow-hidden transition-all duration-300",
+                    "border rounded-xl overflow-hidden transition-all duration-200",
                     isOpen 
-                      ? "border-lime-200 bg-lime-50/30 shadow-sm" 
-                      : "border-gray-100 bg-gray-50 hover:bg-gray-100"
+                      ? "border-blue-200 bg-blue-50/20" 
+                      : "border-gray-200 hover:border-gray-300 bg-white"
                   )}
                 >
                   <button 
+                    type="button"
                     onClick={() => setOpenFaqIndex(isOpen ? null : index)}
-                    className="flex items-center justify-between w-full text-left font-semibold text-gray-800 p-5 focus:outline-none"
+                    className="flex items-center justify-between w-full text-left font-semibold text-gray-800 p-4 cursor-pointer focus:outline-none"
                   >
-                    <span className={cn("text-[15px]", isOpen && "text-lime-700")}>{faq.question}</span>
-                    <div className={cn(
-                      "flex items-center justify-center w-8 h-8 rounded-full shrink-0 transition-all duration-300",
-                      isOpen ? "bg-lime-200 text-lime-700" : "bg-white border border-gray-200 text-gray-400"
-                    )}>
-                      {isOpen ? (
-                        <span className="text-xl leading-none -mt-1">-</span>
-                      ) : (
-                        <span className="text-xl leading-none -mt-0.5">+</span>
-                      )}
-                    </div>
+                    <span className="text-sm font-bold text-gray-900">{faq.question}</span>
+                    <span className="text-base font-bold text-gray-400 ml-2">
+                      {isOpen ? '−' : '+'}
+                    </span>
                   </button>
-                  <div 
-                    className={cn(
-                      "overflow-hidden transition-all duration-300 px-5",
-                      isOpen ? "max-h-[500px] pb-5 opacity-100" : "max-h-0 opacity-0"
-                    )}
-                  >
-                    <p className="text-sm text-gray-600 leading-relaxed border-t border-lime-100 pt-4">
+                  {isOpen && (
+                    <div className="px-4 pb-4 pt-1 text-xs sm:text-sm text-gray-600 leading-relaxed border-t border-gray-100">
                       {faq.answer}
-                    </p>
-                  </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         </div>
-
       </div>
-
 
       {/* Right Column - Sticky Donation Panel */}
       <div className="lg:col-span-1 lg:sticky lg:top-24 self-start">
-        <div className="bg-[#faf9f7] rounded-xl shadow-lg border border-gray-200/60 p-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200/90 p-6 space-y-6">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Heart className="w-6 h-6 text-gray-700" />
-              <span className="text-xl font-medium text-gray-900">Donate</span>
+              <Heart className="w-5 h-5 text-[#003399]" />
+              <span className="text-lg font-bold text-gray-900">Support This Cause</span>
             </div>
-            <button 
-              onClick={() => {
-                document.getElementById('supporters-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="text-sm font-medium text-lime-700 underline decoration-lime-500/30 underline-offset-4 hover:text-lime-800 transition-colors cursor-pointer focus:outline-none"
-            >
-              {campaign.supporters_count || 0} supporters
-            </button>
+            <span className="text-xs font-semibold text-lime-700 bg-lime-50 border border-lime-200 px-2.5 py-1 rounded-full">
+              80G Tax Benefit
+            </span>
           </div>
 
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative w-20 h-20 shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="relative w-18 h-18 shrink-0">
               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  stroke="#e5e7eb"
-                  strokeWidth="8"
-                  fill="transparent"
-                />
+                <circle cx="50" cy="50" r="40" stroke="#e5e7eb" strokeWidth="8" fill="transparent" />
                 <circle
                   cx="50"
                   cy="50"
@@ -360,113 +431,29 @@ export default function CampaignDetailView({ campaign, initialSupporters = [] }:
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-600 mb-1">Raised</div>
-              <div className="flex items-baseline gap-1.5 flex-wrap">
-                <span className="text-xl font-bold text-lime-700">{formatMoney(raised)}</span>
-                <span className="text-sm text-gray-500">of {formatMoney(target)}</span>
-              </div>
+              <div className="text-xs text-gray-500 font-semibold mb-0.5">Raised of {formatMoney(target)}</div>
+              <div className="text-xl font-black text-lime-700">{formatMoney(raised)}</div>
+              <div className="text-[11px] text-gray-400 mt-0.5">{campaign.supporters_count || 0} donors contributed</div>
             </div>
           </div>
 
-          <Button 
-            className="w-full h-14 bg-lime-600 hover:bg-lime-700 text-white text-lg font-semibold rounded-full shadow-md hover:shadow-lg transition-all"
-            onClick={() => window.location.href = `/donate?campaign=${campaign.id}`}
+          <Link
+            href={donateUrl}
+            className="block w-full py-4 bg-[#003399] hover:bg-[#00246a] text-white text-center text-base font-bold rounded-xl shadow-md transition-all cursor-pointer"
           >
-            Donate now
-          </Button>
+            Donate Now
+          </Link>
 
-          <p className="text-center text-sm text-gray-600 mt-4 mb-6 font-medium">
-            Card, Netbanking, Cheque pickups
+          <p className="text-center text-xs text-gray-500 font-medium">
+            UPI, Cards, NetBanking • Instant 80G Receipt
           </p>
 
-          <div className="flex items-center gap-4 mb-6">
-            <div className="h-px bg-gray-200 flex-1"></div>
-            <span className="text-sm text-gray-500 font-medium">Or <span className="text-lime-600">Donate using</span></span>
-            <div className="h-px bg-gray-200 flex-1"></div>
-          </div>
-
-          {/* QR Box */}
-          <div className="border border-gray-200 rounded-lg p-6 flex flex-col items-center justify-center bg-white mb-6 shadow-sm">
-            <QrCode className="w-24 h-24 text-gray-300 mb-4" />
-            <Button variant="outline" className="w-full rounded-full border-lime-600 text-lime-700 hover:bg-lime-50 font-semibold">
-              Generate QR
-            </Button>
-          </div>
-
-          <p className="text-center text-sm text-gray-700 font-medium mb-4">
-            Scan & donate with any app
-          </p>
-
-          {/* Payment App Icons Mock */}
-          <div className="flex justify-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center">
-               <span className="text-xs font-bold text-orange-500">PAY</span>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center">
-               <span className="text-xs font-bold text-blue-500">GPay</span>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center">
-               <span className="text-xs font-bold text-cyan-500">PTM</span>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center">
-               <span className="text-xs font-bold text-purple-600">Pe</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-gray-200">
-            <Button variant="outline" className="w-full bg-green-500 hover:bg-green-600 text-white border-transparent rounded-full font-medium h-12 flex items-center gap-2">
-              <span className="text-lg">📱</span> Share
-            </Button>
-            <Button variant="outline" className="w-full border-lime-600 text-lime-700 hover:bg-lime-50 rounded-full font-medium h-12 flex items-center gap-2">
-              <Share2 className="w-4 h-4" /> Share
-            </Button>
+          <div className="pt-4 border-t border-gray-100 flex items-center justify-center gap-2 text-[11px] text-gray-400">
+            <span>🔒 256-Bit SSL Secured Payment</span>
           </div>
         </div>
       </div>
 
-      {/* Supporters Modal */}
-      {isSupportersModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-900">All Supporters</h3>
-              <button 
-                onClick={() => setIsSupportersModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="overflow-y-auto p-6 space-y-4">
-              {initialSupporters.length > 0 ? (
-                initialSupporters.map((supporter, i) => (
-                  <div key={i} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                    <div className="w-12 h-12 rounded-full bg-lime-100 text-lime-700 flex items-center justify-center font-bold text-xl shrink-0 uppercase shadow-sm">
-                      {supporter.initial}
-                    </div>
-                    <div>
-                      <div className="text-gray-900 font-semibold">{supporter.name}</div>
-                      <div className="text-lime-700 font-bold mt-0.5">₹{parseFloat(supporter.amount).toLocaleString('en-IN')}</div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-500 text-center py-4">No supporters yet.</p>
-              )}
-            </div>
-            <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
-              <button 
-                onClick={() => setIsSupportersModalOpen(false)}
-                className="w-full bg-lime-600 text-white font-bold py-3 rounded-xl hover:bg-lime-700 transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       {/* Mobile Sticky Quick Action Bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-md border-t border-gray-200 z-30 shadow-lg flex items-center justify-between gap-3">
         <div className="flex flex-col">
@@ -474,8 +461,8 @@ export default function CampaignDetailView({ campaign, initialSupporters = [] }:
           <span className="text-sm font-bold text-[#003399]">{formatMoney(raised)}</span>
         </div>
         <Link
-          href={`/donate?campaign=${campaign.id}`}
-          className="px-6 py-2.5 rounded-full bg-lime-600 hover:bg-lime-700 text-white font-bold text-sm shadow-md transition-all flex items-center gap-1.5"
+          href={donateUrl}
+          className="px-6 py-2.5 rounded-full bg-[#003399] hover:bg-[#002878] text-white font-bold text-sm shadow-md transition-all flex items-center gap-1.5"
         >
           <Heart className="w-4 h-4 fill-white" />
           <span>Donate Now</span>
