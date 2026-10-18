@@ -69,6 +69,13 @@ export async function cancelCampaign(id: string): Promise<Campaign> {
   return res.data.data;
 }
 
+/**
+ * Permanently delete a campaign.
+ */
+export async function deleteCampaign(id: string): Promise<void> {
+  await api.delete(`/api/v1/campaigns/${id}`);
+}
+
 // ─── Campaign Categories ──────────────────────────────────────────────────────
 
 /**

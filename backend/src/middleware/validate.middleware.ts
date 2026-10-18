@@ -13,9 +13,12 @@ export const validateRequest = (schema: ZodSchema) => {
       return next();
     } catch (error) {
       if (error instanceof ZodError) {
+        const errorDetails = error.issues
+          .map((i) => `${(i.path || []).filter((p) => p !== 'body').join('.') || 'input'}: ${i.message}`)
+          .join(', ');
         return res.status(400).json({
           status: 'fail',
-          message: 'Validation Error',
+          message: errorDetails ? `Validation Error: ${errorDetails}` : 'Validation Error',
           errors: error.issues,
         });
       }

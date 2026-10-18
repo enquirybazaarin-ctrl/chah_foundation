@@ -3,32 +3,42 @@ import { z } from 'zod';
 export const createCampaignSchema = z.object({
   body: z.object({
     title: z.string().min(3).max(255),
-    category_id: z.string().regex(/^\d+$/),
-    short_description: z.string().max(1000).optional(),
-    beneficiary_name: z.string().max(200).optional(),
-    beneficiary_age: z.number().int().min(0).max(150).optional(),
-    location: z.string().max(200).optional(),
-    target_amount: z.number().positive().optional(),
-    raised_amount: z.number().min(0).optional(),
-    start_date: z.string().datetime().optional(),
-    end_date: z.string().datetime().optional(),
+    category_id: z.union([
+      z.string().regex(/^\d+$/),
+      z.number().int().positive().transform(n => String(n))
+    ]),
+    short_description: z.string().max(2000).optional().nullable().or(z.literal('')),
+    beneficiary_name: z.string().max(200).optional().nullable().or(z.literal('')),
+    beneficiary_age: z.number().int().min(0).max(150).optional().nullable(),
+    location: z.string().max(200).optional().nullable().or(z.literal('')),
+    target_amount: z.number().min(0).optional().nullable(),
+    raised_amount: z.number().min(0).optional().nullable(),
+    start_date: z.string().optional().nullable().or(z.literal('')),
+    end_date: z.string().optional().nullable().or(z.literal('')),
     content: z.string().min(1),
-    featured_image_id: z.string().regex(/^\d+$/).optional(),
-    featured_image_url: z.string().url().optional(),
-    supporting_images: z.array(z.string()).optional(),
+    featured_image_id: z.union([
+      z.string().regex(/^\d+$/),
+      z.number().int().positive().transform(n => String(n))
+    ]).optional().nullable(),
+    featured_image_url: z.string().max(1000).optional().nullable().or(z.literal('')),
+    supporting_images: z.array(z.string()).optional().nullable(),
     is_featured: z.boolean().optional(),
     is_urgent: z.boolean().optional(),
-    urgency_label: z.string().max(100).optional(),
-    cta_button_text: z.string().max(100).optional(),
-    sort_order: z.number().int().optional(),
-    supporters_count: z.number().int().min(0).optional(),
+    urgency_label: z.string().max(100).optional().nullable().or(z.literal('')),
+    cta_button_text: z.string().max(100).optional().nullable().or(z.literal('')),
+    sort_order: z.number().int().optional().nullable(),
+    supporters_count: z.number().int().min(0).optional().nullable(),
   }).refine(data => {
     if (data.start_date && data.end_date) {
-      return new Date(data.end_date) > new Date(data.start_date);
+      const start = new Date(data.start_date);
+      const end = new Date(data.end_date);
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        return end >= start;
+      }
     }
     return true;
   }, {
-    message: "end_date must be greater than start_date",
+    message: "end_date must be greater than or equal to start_date",
     path: ["end_date"]
   })
 });
@@ -36,32 +46,42 @@ export const createCampaignSchema = z.object({
 export const updateCampaignSchema = z.object({
   body: z.object({
     title: z.string().min(3).max(255).optional(),
-    category_id: z.string().regex(/^\d+$/).optional(),
-    short_description: z.string().max(1000).nullable().optional(),
-    beneficiary_name: z.string().max(200).nullable().optional(),
-    beneficiary_age: z.number().int().min(0).max(150).nullable().optional(),
-    location: z.string().max(200).nullable().optional(),
-    target_amount: z.number().positive().nullable().optional(),
-    raised_amount: z.number().min(0).optional(),
-    start_date: z.string().datetime().nullable().optional(),
-    end_date: z.string().datetime().nullable().optional(),
+    category_id: z.union([
+      z.string().regex(/^\d+$/),
+      z.number().int().positive().transform(n => String(n))
+    ]).optional(),
+    short_description: z.string().max(2000).optional().nullable().or(z.literal('')),
+    beneficiary_name: z.string().max(200).optional().nullable().or(z.literal('')),
+    beneficiary_age: z.number().int().min(0).max(150).optional().nullable(),
+    location: z.string().max(200).optional().nullable().or(z.literal('')),
+    target_amount: z.number().min(0).optional().nullable(),
+    raised_amount: z.number().min(0).optional().nullable(),
+    start_date: z.string().optional().nullable().or(z.literal('')),
+    end_date: z.string().optional().nullable().or(z.literal('')),
     content: z.string().min(1).optional(),
-    featured_image_id: z.string().regex(/^\d+$/).nullable().optional(),
-    featured_image_url: z.string().url().nullable().optional(),
-    supporting_images: z.array(z.string()).optional(),
+    featured_image_id: z.union([
+      z.string().regex(/^\d+$/),
+      z.number().int().positive().transform(n => String(n))
+    ]).optional().nullable(),
+    featured_image_url: z.string().max(1000).optional().nullable().or(z.literal('')),
+    supporting_images: z.array(z.string()).optional().nullable(),
     is_featured: z.boolean().optional(),
     is_urgent: z.boolean().optional(),
-    urgency_label: z.string().max(100).nullable().optional(),
-    cta_button_text: z.string().max(100).optional(),
-    sort_order: z.number().int().optional(),
-    supporters_count: z.number().int().min(0).optional(),
+    urgency_label: z.string().max(100).optional().nullable().or(z.literal('')),
+    cta_button_text: z.string().max(100).optional().nullable().or(z.literal('')),
+    sort_order: z.number().int().optional().nullable(),
+    supporters_count: z.number().int().min(0).optional().nullable(),
   }).refine(data => {
     if (data.start_date && data.end_date) {
-      return new Date(data.end_date) > new Date(data.start_date);
+      const start = new Date(data.start_date);
+      const end = new Date(data.end_date);
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        return end >= start;
+      }
     }
     return true;
   }, {
-    message: "end_date must be greater than start_date",
+    message: "end_date must be greater than or equal to start_date",
     path: ["end_date"]
   })
 });

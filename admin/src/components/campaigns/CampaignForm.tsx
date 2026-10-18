@@ -232,7 +232,7 @@ export function CampaignForm({
         errors.content = 'Full campaign description/content is required.';
       }
     } else {
-      if (!builderDesc.trim()) {
+      if (!builderDesc.trim() && !shortDescription.trim()) {
         errors.content = 'Full campaign description is required.';
       }
     }
@@ -241,13 +241,14 @@ export function CampaignForm({
     return Object.keys(errors).length === 0;
   };
 
-  const generateBuilderHtml = () => {
+  const generateBuilderHtml = (descText?: string) => {
+    const textToUse = descText || builderDesc.trim() || shortDescription.trim();
     let html = `<div class="campaign-story">`;
     if (builderHeading) {
       html += `\n  <h2>${builderHeading}</h2>`;
     }
-    if (builderDesc) {
-      const paragraphs = builderDesc.split('\n').filter(p => p.trim() !== '');
+    if (textToUse) {
+      const paragraphs = textToUse.split('\n').filter(p => p.trim() !== '');
       paragraphs.forEach(p => {
         html += `\n  <p>${p}</p>`;
       });

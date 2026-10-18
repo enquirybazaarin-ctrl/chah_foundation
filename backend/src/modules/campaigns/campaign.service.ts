@@ -21,105 +21,15 @@ function generateSlug(title: string): string {
 
 export class CampaignService {
   public async ensureInitialEducationCampaignsSeed() {
-    const count = await campaignRepository.countActive();
-    if (count > 0) return;
-
     let cat = await prisma.campaignCategory.findFirst({ where: { slug: 'education' } });
     if (!cat) {
-      cat = await prisma.campaignCategory.create({
+      await prisma.campaignCategory.create({
         data: {
           name: 'Education & School Support',
           slug: 'education',
           description: 'Child education and learning essentials',
         },
       });
-    }
-
-    const seeds = [
-      {
-        title: 'Help Amit continue his education',
-        slug: 'help-amit-continue-education',
-        category_id: cat.id,
-        short_description: 'Amit needs support for his school fees and essential learning materials to stay in school.',
-        beneficiary_name: 'Amit',
-        beneficiary_age: 10,
-        location: 'Sitapur, Uttar Pradesh',
-        target_amount: new Prisma.Decimal(8000),
-        raised_amount: new Prisma.Decimal(3200),
-        status: 'ACTIVE' as const,
-        content: 'Amit is a diligent 10-year-old student who dreams of becoming a science teacher. Due to severe economic hardship, his family cannot afford this term school fees, uniforms, and textbooks. Your contribution ensures Amit does not drop out and can pursue his education safely.',
-        featured_image_url: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=1200&auto=format&fit=crop',
-        is_featured: true,
-        is_urgent: true,
-        urgency_label: '5 days left',
-        cta_button_text: 'Help Amit',
-        sort_order: 1,
-        supporters_count: 12,
-      },
-      {
-        title: 'Help Veena get her school kit & uniform',
-        slug: 'help-veena-school-kit',
-        category_id: cat.id,
-        short_description: 'Veena dreams of becoming a teacher. Help provide her with books, a bag, and a school uniform.',
-        beneficiary_name: 'Veena',
-        beneficiary_age: 8,
-        location: 'Lucknow, Uttar Pradesh',
-        target_amount: new Prisma.Decimal(5000),
-        raised_amount: new Prisma.Decimal(1500),
-        status: 'ACTIVE' as const,
-        content: 'Veena is an 8-year-old bright student starting 3rd grade. Her parents work as daily wage earners and struggle to purchase compulsory school supplies. A contribution of just ₹500 provides a full textbook set and bag.',
-        featured_image_url: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=800&auto=format&fit=crop',
-        is_featured: false,
-        is_urgent: false,
-        urgency_label: null,
-        cta_button_text: 'Help Veena',
-        sort_order: 2,
-        supporters_count: 7,
-      },
-      {
-        title: 'Help Bharti continue school after family hardship',
-        slug: 'help-bharti-continue-school',
-        category_id: cat.id,
-        short_description: 'Provide annual tuition support and stationery to prevent Bharti from dropping out of class 7.',
-        beneficiary_name: 'Bharti',
-        beneficiary_age: 12,
-        location: 'Barabanki, Uttar Pradesh',
-        target_amount: new Prisma.Decimal(10000),
-        raised_amount: new Prisma.Decimal(4200),
-        status: 'ACTIVE' as const,
-        content: 'Bharti is top of her class in mathematics and hopes to attend college. Following her father illness, the family faces tuition arrears. Sponsorship covers tuition, exam fees, and coaching support.',
-        featured_image_url: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?q=80&w=800&auto=format&fit=crop',
-        is_featured: false,
-        is_urgent: false,
-        urgency_label: null,
-        cta_button_text: 'Help Bharti',
-        sort_order: 3,
-        supporters_count: 19,
-      },
-      {
-        title: 'Clean water & sanitation kit for Aarav and schoolmates',
-        slug: 'clean-water-sanitation-aarav',
-        category_id: cat.id,
-        short_description: 'Ensure Aarav and his fellow 120 schoolmates have clean drinking water and hygiene essentials.',
-        beneficiary_name: 'Aarav',
-        beneficiary_age: 9,
-        location: 'Rae Bareli, Uttar Pradesh',
-        target_amount: new Prisma.Decimal(12000),
-        raised_amount: new Prisma.Decimal(6800),
-        status: 'ACTIVE' as const,
-        content: 'Clean drinking water is fundamental for school attendance and preventing waterborne diseases. This initiative installs a filtration unit and handwashing station at Aarav primary school.',
-        featured_image_url: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=800&auto=format&fit=crop',
-        is_featured: false,
-        is_urgent: false,
-        urgency_label: null,
-        cta_button_text: 'Help Aarav',
-        sort_order: 4,
-        supporters_count: 24,
-      },
-    ];
-
-    for (const seed of seeds) {
-      await prisma.campaign.create({ data: seed });
     }
   }
 
@@ -425,6 +335,43 @@ export class CampaignService {
     });
 
     return this.mapResponse(updated);
+  }
+
+  public async deleteCampaign(
+    id: bigint, 
+    auditContext: { actorUserId?: bigint; ipAddress?: string }
+  ): Promise<boolean> {
+    const campaign = await campaignRepository.findById(id);
+    if (!campaign) {
+      throw new AppError('Campaign not found', 404);
+    }
+
+    // Safety check: Do not delete a campaign that has received actual donations
+    const donationCount = await prisma.donation.count({
+      where: { campaign_id: id, status: 'SUCCESS' }
+    });
+    if (donationCount > 0) {
+      throw new AppError('Cannot delete a campaign with completed donations. You can cancel it instead.', 400);
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.donation.deleteMany({ where: { campaign_id: id } });
+      await tx.subscription.deleteMany({ where: { campaign_id: id } });
+      await tx.campaign.delete({ where: { id } });
+
+      await tx.auditLog.create({
+        data: {
+          action: 'CAMPAIGN_DELETED',
+          entity_type: 'CAMPAIGN',
+          entity_id: id,
+          user_id: auditContext.actorUserId || null,
+          ip_address: auditContext.ipAddress,
+          old_values: { title: campaign.title, slug: campaign.slug }
+        }
+      });
+    });
+
+    return true;
   }
 
   private async sanitizeContent(html: string): Promise<string> {

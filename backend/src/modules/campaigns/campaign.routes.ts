@@ -16,6 +16,7 @@ import {
   getFoodSection,
   updateFoodSectionSettings,
   getCampaignSupporters,
+  deleteCampaign,
 } from './campaign.controller';
 import { protect } from '../auth/auth.middleware';
 import { requirePermission } from '../auth/rbac.middleware';
@@ -110,6 +111,13 @@ router.patch(
   protect,
   requirePermission('delete', 'campaigns'),
   cancelCampaign
+);
+
+router.delete(
+  '/:id',
+  protect,
+  requirePermission('delete', 'campaigns'),
+  deleteCampaign
 );
 
 export default router;

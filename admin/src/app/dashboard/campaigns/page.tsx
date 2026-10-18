@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Plus, ExternalLink, Sparkles, Settings2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, ExternalLink, Sparkles, Settings2, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -24,7 +24,8 @@ import {
   getEldercareSectionAdmin,
   updateEldercareSectionSettings,
   getFoodSectionAdmin,
-  updateFoodSectionSettings
+  updateFoodSectionSettings,
+  deleteCampaign,
 } from '@/lib/campaigns.api';
 import { formatDate } from '@/lib/utils';
 import type { Campaign, PaginatedResponse, CampaignStatus } from '@/lib/types';
@@ -262,6 +263,26 @@ export default function CampaignsPage() {
     const params = new URLSearchParams(searchParams.toString());
     params.set('page', String(newPage));
     router.push(`${pathname}?${params.toString()}`);
+  };
+
+  const handleDeleteCampaign = async (id: string, title: string) => {
+    if (!window.confirm(`Are you sure you want to permanently delete campaign "${title}"?`)) {
+      return;
+    }
+    try {
+      await deleteCampaign(id);
+      setResult((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          data: prev.data.filter((c) => c.id !== id),
+          meta: { ...prev.meta, total: Math.max(0, prev.meta.total - 1) },
+        };
+      });
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      alert(axiosErr?.response?.data?.message || 'Failed to delete campaign');
+    }
   };
 
   return (
@@ -866,6 +887,18 @@ export default function CampaignsPage() {
                       >
                         <ExternalLink className="h-4 w-4" />
                       </Link>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleDeleteCampaign(campaign.id, campaign.title);
+                        }}
+                        className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        aria-label={`Delete ${campaign.title}`}
+                        title="Delete campaign"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </TableCell>
                 </TableRow>

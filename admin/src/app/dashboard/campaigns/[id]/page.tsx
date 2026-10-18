@@ -73,10 +73,25 @@ export default function CampaignDetailPage() {
       setCampaign(updated);
       setSuccessMessage('Campaign updated successfully!');
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { message?: string } } };
-      setSubmitError(
-        axiosErr?.response?.data?.message ?? 'Failed to update campaign. Please try again.'
-      );
+      const axiosErr = err as {
+        response?: {
+          data?: {
+            message?: string;
+            errors?: Array<{ path?: string[]; message?: string }>;
+          };
+        };
+      };
+      const issues = axiosErr?.response?.data?.errors;
+      if (issues && Array.isArray(issues) && issues.length > 0) {
+        const detailStr = issues
+          .map((i) => `${(i.path || []).filter((p) => p !== 'body').join('.') || 'field'}: ${i.message}`)
+          .join(' | ');
+        setSubmitError(`Validation Error: ${detailStr}`);
+      } else {
+        setSubmitError(
+          axiosErr?.response?.data?.message ?? 'Failed to update campaign. Please try again.'
+        );
+      }
     } finally {
       setIsSubmitting(false);
     }

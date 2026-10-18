@@ -164,3 +164,16 @@ export const getCampaignSupporters = async (req: Request, res: Response, next: N
     next(error);
   }
 };
+
+export const deleteCampaign = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const auditContext = {
+      actorUserId: req.user?.id ? BigInt(req.user.id) : undefined,
+      ipAddress: req.ip
+    };
+    await campaignService.deleteCampaign(BigInt(req.params.id as string), auditContext);
+    res.status(200).json({ success: true, message: 'Campaign deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
