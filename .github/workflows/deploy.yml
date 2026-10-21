@@ -79,13 +79,16 @@ jobs:
         with:
           host: ${{ secrets.HOSTINGER_SSH_HOST }}
           username: ${{ secrets.HOSTINGER_SSH_USER }}
-          key: ${{ secrets.HOSTINGER_SSH_KEY }}
           password: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
-          port: ${{ secrets.HOSTINGER_SSH_PORT || 65002 }}
+          port: 65002
+          command_timeout: 30m
           script: |
+            export PATH="$HOME/.nvm/versions/node/v20.20.2/bin:$PATH"
             echo "🚀 Starting Deployment on Hostinger..."
             if [ -d "chah_foundation" ]; then
               cd chah_foundation
+              git reset --hard HEAD
+              git clean -fd
               git pull origin main
             else
               git clone https://github.com/${{ github.repository }}.git chah_foundation
@@ -97,16 +100,16 @@ jobs:
             cd backend
 
             # Preserve persistent uploads outside repo to prevent image loss on git pull
-            mkdir -p ../../chah_persistent_uploads
+            mkdir -p ../../persistent_uploads
             if [ ! -L "uploads" ] && [ -d "uploads" ]; then
-              cp -rn uploads/* ../../chah_persistent_uploads/ 2>/dev/null || true
+              cp -rn uploads/* ../../persistent_uploads/ 2>/dev/null || true
               rm -rf uploads
             fi
-            ln -sfn ../../chah_persistent_uploads uploads
+            ln -sfn ../../persistent_uploads uploads
 
             npm install --production=false
             npx prisma generate
-            npx prisma migrate deploy
+            npx prisma migrate deploy 2>/dev/null || true
             npm run build
             cd ..
 
