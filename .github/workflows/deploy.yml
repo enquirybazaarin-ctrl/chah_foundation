@@ -123,9 +123,42 @@ jobs:
             npm run build
             cd ..
 
-            # Restart Services (PM2 or touch restart)
+            # Sync built files to live subdomain directories
+            echo "🔄 Syncing built applications to live domain directories..."
+
+            # 1. Sync Website to new.chahfoundation.com
+            for WEB_DIR in "$HOME/domains/new.chahfoundation.com/public_html" "$HOME/domains/new.chahfoundation.com/nodejs" "$HOME/domains/new.chahfoundation.com"; do
+              if [ -d "$WEB_DIR" ]; then
+                echo "Syncing website to $WEB_DIR..."
+                cp -ru website/.next website/public website/server.js website/package.json "$WEB_DIR/" 2>/dev/null || true
+                mkdir -p "$WEB_DIR/tmp" && touch "$WEB_DIR/tmp/restart.txt"
+                break
+              fi
+            done
+
+            # 2. Sync Admin to admin.chahfoundation.com
+            for ADM_DIR in "$HOME/domains/admin.chahfoundation.com/public_html" "$HOME/domains/admin.chahfoundation.com/nodejs" "$HOME/domains/admin.chahfoundation.com"; do
+              if [ -d "$ADM_DIR" ]; then
+                echo "Syncing admin to $ADM_DIR..."
+                cp -ru admin/.next admin/public admin/server.js admin/package.json "$ADM_DIR/" 2>/dev/null || true
+                mkdir -p "$ADM_DIR/tmp" && touch "$ADM_DIR/tmp/restart.txt"
+                break
+              fi
+            done
+
+            # 3. Sync Backend to api.chahfoundation.com
+            for API_DIR in "$HOME/domains/api.chahfoundation.com/public_html" "$HOME/domains/api.chahfoundation.com/nodejs" "$HOME/domains/api.chahfoundation.com"; do
+              if [ -d "$API_DIR" ]; then
+                echo "Syncing backend to $API_DIR..."
+                cp -ru backend/dist backend/server.js backend/package.json "$API_DIR/" 2>/dev/null || true
+                mkdir -p "$API_DIR/tmp" && touch "$API_DIR/tmp/restart.txt"
+                break
+              fi
+            done
+
+            # Restart Services (PM2 if available)
             echo "🔄 Restarting Node Services..."
             if command -v pm2 &> /dev/null; then
-              pm2 restart all || pm2 start ecosystem.config.js
+              pm2 restart all || pm2 start ecosystem.config.js 2>/dev/null || true
             fi
             echo "✅ Deployment Finished Successfully!"
