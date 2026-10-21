@@ -1,4 +1,5 @@
 #!/bin/bash
+# Hostinger automated deployment runner - $(date)
 set -e
 
 export PATH="$HOME/.nvm/versions/node/v20.20.2/bin:$PATH"
