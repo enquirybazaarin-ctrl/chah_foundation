@@ -1,5 +1,5 @@
 name: CHAH Foundation CI/CD Deploy
-# Auto-deployment to Hostinger (Websites, Admin, Backend)
+# Automated Deployment to Hostinger via High-Speed FTPS
 
 on:
   push:
@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-test:
-    name: Build & Validate All Applications
+  build-and-deploy:
+    name: Build & Auto-Deploy All Applications
     runs-on: ubuntu-latest
 
     steps:
@@ -33,6 +33,8 @@ jobs:
           npm ci
           npx prisma generate
           npm run build
+          mkdir -p tmp
+          touch tmp/restart.txt
         env:
           DATABASE_URL: "mysql://root:test@localhost:3306/chah_test"
           JWT_SECRET: "mock_jwt_secret_must_be_32_characters_long_for_test"
@@ -48,6 +50,8 @@ jobs:
           cd website
           npm ci
           npm run build
+          mkdir -p tmp
+          touch tmp/restart.txt
         env:
           NEXT_PUBLIC_API_URL: "https://api.chahfoundation.com"
 
@@ -57,33 +61,59 @@ jobs:
           cd admin
           npm ci
           npm run build
+          mkdir -p tmp
+          touch tmp/restart.txt
         env:
           NEXT_PUBLIC_API_URL: "https://api.chahfoundation.com"
 
-  deploy-to-hostinger:
-    name: Deploy to Hostinger via Native SSH
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+      # 4. Deploy Website to new.chahfoundation.com via FTP
+      - name: Deploy Website to new.chahfoundation.com
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: 145.79.58.42
+          username: u605717783
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD || secrets.HOSTINGER_SSH_PASSWORD }}
+          local-dir: ./website/
+          server-dir: ./domains/new.chahfoundation.com/hbuilds/current/nodejs/
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.env*
+            **/.env*/**
 
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      # 5. Deploy Admin to admin.chahfoundation.com via FTP
+      - name: Deploy Admin to admin.chahfoundation.com
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: 145.79.58.42
+          username: u605717783
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD || secrets.HOSTINGER_SSH_PASSWORD }}
+          local-dir: ./admin/
+          server-dir: ./domains/admin.chahfoundation.com/hbuilds/current/nodejs/
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.env*
+            **/.env*/**
 
-      - name: Execute Remote Deploy on Hostinger
-        env:
-          HOSTINGER_SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
-          HOSTINGER_SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
-          HOSTINGER_SSH_PASSWORD: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
-        run: |
-          if [ -z "$HOSTINGER_SSH_HOST" ]; then
-            echo "HOSTINGER_SSH_HOST is not set. Skipping deploy."
-            exit 0
-          fi
-
-          echo "📦 Installing sshpass..."
-          sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
-
-          echo "🚀 Connecting to Hostinger via Native OpenSSH on port 65002..."
-          chmod +x scripts/deploy_hostinger.sh
-          sshpass -p "$HOSTINGER_SSH_PASSWORD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60 -p 65002 "$HOSTINGER_SSH_USER@$HOSTINGER_SSH_HOST" "bash -s" < scripts/deploy_hostinger.sh
+      # 6. Deploy Backend to api.chahfoundation.com via FTP
+      - name: Deploy Backend to api.chahfoundation.com
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: 145.79.58.42
+          username: u605717783
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD || secrets.HOSTINGER_SSH_PASSWORD }}
+          local-dir: ./backend/
+          server-dir: ./domains/api.chahfoundation.com/hbuilds/current/nodejs/
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.env*
+            **/.env*/**
+            **/uploads/**
