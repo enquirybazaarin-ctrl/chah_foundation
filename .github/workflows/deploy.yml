@@ -66,11 +66,14 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: "https://api.chahfoundation.com"
 
-      # 4. Deploy Website to new.chahfoundation.com via FTP
+      # 4. Deploy Website to new.chahfoundation.com via FTPS
       - name: Deploy Website to new.chahfoundation.com
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: 145.79.58.42
+          port: 21
+          protocol: ftps
+          security: loose
           username: u605717783
           password: ${{ secrets.HOSTINGER_FTP_PASSWORD || secrets.HOSTINGER_SSH_PASSWORD }}
           local-dir: ./website/
@@ -83,11 +86,14 @@ jobs:
             **/.env*
             **/.env*/**
 
-      # 5. Deploy Admin to admin.chahfoundation.com via FTP
+      # 5. Deploy Admin to admin.chahfoundation.com via FTPS
       - name: Deploy Admin to admin.chahfoundation.com
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: 145.79.58.42
+          port: 21
+          protocol: ftps
+          security: loose
           username: u605717783
           password: ${{ secrets.HOSTINGER_FTP_PASSWORD || secrets.HOSTINGER_SSH_PASSWORD }}
           local-dir: ./admin/
@@ -100,11 +106,14 @@ jobs:
             **/.env*
             **/.env*/**
 
-      # 6. Deploy Backend to api.chahfoundation.com via FTP
+      # 6. Deploy Backend to api.chahfoundation.com via FTPS
       - name: Deploy Backend to api.chahfoundation.com
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: 145.79.58.42
+          port: 21
+          protocol: ftps
+          security: loose
           username: u605717783
           password: ${{ secrets.HOSTINGER_FTP_PASSWORD || secrets.HOSTINGER_SSH_PASSWORD }}
           local-dir: ./backend/
