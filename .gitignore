@@ -20,6 +20,8 @@ backend/uploads/
 backend_deploy.zip
 
 *.log
+*/tmp/
+tmp/
 
 .DS_Store
 Thumbs.db

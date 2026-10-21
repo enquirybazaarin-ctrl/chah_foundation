@@ -66,63 +66,33 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: "https://api.chahfoundation.com"
 
-      # 4. Deploy Website to new.chahfoundation.com via FTPS
-      - name: Deploy Website to new.chahfoundation.com
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: 145.79.58.42
-          port: 21
-          protocol: ftps
-          security: loose
-          username: u605717783
-          password: ${{ secrets.HOSTINGER_FTP_PASSWORD || secrets.HOSTINGER_SSH_PASSWORD }}
-          local-dir: ./website/
-          server-dir: ./domains/new.chahfoundation.com/hbuilds/current/nodejs/
-          dangerous-clean-slate: false
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/.env*
-            **/.env*/**
+      # 4. Install Deploy Dependencies
+      - name: Setup Deployer
+        run: npm install --no-save basic-ftp
 
-      # 5. Deploy Admin to admin.chahfoundation.com via FTPS
-      - name: Deploy Admin to admin.chahfoundation.com
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: 145.79.58.42
-          port: 21
-          protocol: ftps
-          security: loose
-          username: u605717783
-          password: ${{ secrets.HOSTINGER_FTP_PASSWORD || secrets.HOSTINGER_SSH_PASSWORD }}
-          local-dir: ./admin/
-          server-dir: ./domains/admin.chahfoundation.com/hbuilds/current/nodejs/
-          dangerous-clean-slate: false
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/.env*
-            **/.env*/**
+      # 5. Deploy Website to new.chahfoundation.com via FTPS
+      - name: Deploy Website (new.chahfoundation.com)
+        run: node scripts/deploy.js --app=website
+        env:
+          HOSTINGER_FTP_HOST: "145.79.58.42"
+          HOSTINGER_FTP_PORT: "21"
+          HOSTINGER_FTP_USER: "u605717783"
+          HOSTINGER_FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD || secrets.HOSTINGER_SSH_PASSWORD }}
 
-      # 6. Deploy Backend to api.chahfoundation.com via FTPS
-      - name: Deploy Backend to api.chahfoundation.com
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: 145.79.58.42
-          port: 21
-          protocol: ftps
-          security: loose
-          username: u605717783
-          password: ${{ secrets.HOSTINGER_FTP_PASSWORD || secrets.HOSTINGER_SSH_PASSWORD }}
-          local-dir: ./backend/
-          server-dir: ./domains/api.chahfoundation.com/hbuilds/current/nodejs/
-          dangerous-clean-slate: false
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/.env*
-            **/.env*/**
-            **/uploads/**
+      # 6. Deploy Admin to admin.chahfoundation.com via FTPS
+      - name: Deploy Admin (admin.chahfoundation.com)
+        run: node scripts/deploy.js --app=admin
+        env:
+          HOSTINGER_FTP_HOST: "145.79.58.42"
+          HOSTINGER_FTP_PORT: "21"
+          HOSTINGER_FTP_USER: "u605717783"
+          HOSTINGER_FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD || secrets.HOSTINGER_SSH_PASSWORD }}
+
+      # 7. Deploy Backend to api.chahfoundation.com via FTPS
+      - name: Deploy Backend (api.chahfoundation.com)
+        run: node scripts/deploy.js --app=backend
+        env:
+          HOSTINGER_FTP_HOST: "145.79.58.42"
+          HOSTINGER_FTP_PORT: "21"
+          HOSTINGER_FTP_USER: "u605717783"
+          HOSTINGER_FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD || secrets.HOSTINGER_SSH_PASSWORD }}
