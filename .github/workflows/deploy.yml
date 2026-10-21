@@ -61,7 +61,7 @@ jobs:
           NEXT_PUBLIC_API_URL: "https://api.chahfoundation.com"
 
   deploy-to-hostinger:
-    name: Deploy to Hostinger via SSH
+    name: Deploy to Hostinger via Native SSH
     needs: build-and-test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
@@ -70,21 +70,26 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Deploy using SSH only if HOSTINGER_SSH_HOST is configured in GitHub Secrets
       - name: Execute Remote Deploy on Hostinger
-        uses: appleboy/ssh-action@v1.0.3
-        if: "${{ env.HOSTINGER_SSH_HOST != '' }}"
         env:
           HOSTINGER_SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
-        with:
-          host: ${{ secrets.HOSTINGER_SSH_HOST }}
-          username: ${{ secrets.HOSTINGER_SSH_USER }}
-          password: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
-          port: 65002
-          command_timeout: 30m
-          script: |
+          HOSTINGER_SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+          HOSTINGER_SSH_PASSWORD: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
+        run: |
+          if [ -z "$HOSTINGER_SSH_HOST" ]; then
+            echo "HOSTINGER_SSH_HOST is not set. Skipping deploy."
+            exit 0
+          fi
+
+          echo "📦 Installing sshpass..."
+          sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
+
+          echo "🚀 Connecting to Hostinger via Native OpenSSH on port 65002..."
+          sshpass -p "$HOSTINGER_SSH_PASSWORD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60 -p 65002 "$HOSTINGER_SSH_USER@$HOSTINGER_SSH_HOST" 'bash -s' << 'EOF'
+            set -e
             export PATH="$HOME/.nvm/versions/node/v20.20.2/bin:$PATH"
             echo "🚀 Starting Deployment on Hostinger..."
+
             if [ -d "chah_foundation" ]; then
               cd chah_foundation
               git reset --hard HEAD
@@ -166,3 +171,4 @@ jobs:
               pm2 restart all || pm2 start ecosystem.config.js 2>/dev/null || true
             fi
             echo "✅ Deployment Finished Successfully!"
+          EOF
