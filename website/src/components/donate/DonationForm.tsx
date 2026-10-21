@@ -32,6 +32,20 @@ interface DonationFormProps {
 
 const PRESET_AMOUNTS = [500, 1000, 1500, 2000, 2500, 3000, 5000];
 
+const loadRazorpayScript = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (typeof window !== "undefined" && (window as any).Razorpay) {
+      return resolve(true);
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 export function DonationForm({ 
   initialCampaignId, 
   initialCampaign,
@@ -186,7 +200,13 @@ export function DonationForm({
       const firstName = nameParts[0] || "Donor";
       const lastName = nameParts.slice(1).join(" ") || "";
 
-      const idempotencyKey = `web_don_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      const idempotencyKey = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
 
       const occasionText = occasion 
         ? `[Celebrate with CHAH: ${occasion}]${dedicationName ? ` Dedicated to: ${dedicationName}` : ''}${dedicationMessage ? ` | Note: ${dedicationMessage}` : ''}`
@@ -218,6 +238,7 @@ export function DonationForm({
         throw new Error("Unable to create payment order. Please try again.");
       }
 
+      await loadRazorpayScript();
       const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_Tn01BAA8zDWgpo";
       const isRazorpaySdkAvailable = typeof window !== "undefined" && (window as any).Razorpay;
       const isDevMockKey = razorpayKey === "test_key_id" || razorpayOrderId.startsWith("order_dev_");
@@ -433,7 +454,7 @@ export function DonationForm({
   // ========================================================
   return (
     <>
-      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
 
       <div id="donation-form-card" className="bg-white rounded-2xl shadow-xl border border-gray-200/90 p-4 sm:p-7 max-w-xl mx-auto scroll-mt-28 transition-all">
         

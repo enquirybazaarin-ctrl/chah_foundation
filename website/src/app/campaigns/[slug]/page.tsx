@@ -113,10 +113,10 @@ export default async function CampaignPage({ params }: PageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 pt-24 pb-16">
+    <div className="min-h-screen bg-gray-50 pt-8 pb-16">
       <div className="container mx-auto px-4 max-w-6xl">
         <CampaignDetailView campaign={campaign} initialSupporters={supporters} />
       </div>
-    </main>
+    </div>
   );
 }

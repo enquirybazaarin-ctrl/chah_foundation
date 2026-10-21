@@ -150,6 +150,12 @@ export class CampaignService {
       const slug = attempts === 0 ? baseSlug : `${baseSlug}-${attempts}`;
       try {
         const campaign = await prisma.$transaction(async (tx) => {
+          const initialRaised = data.raised_amount !== undefined && data.raised_amount !== null
+            ? new Prisma.Decimal(data.raised_amount)
+            : new Prisma.Decimal(0);
+          const targetDec = data.target_amount ? new Prisma.Decimal(data.target_amount) : null;
+          const initialStatus = (targetDec && initialRaised.gte(targetDec)) ? 'COMPLETED' : 'ACTIVE';
+
           const newCampaign = await tx.campaign.create({
             data: {
               title: data.title,
@@ -159,8 +165,8 @@ export class CampaignService {
               beneficiary_name: data.beneficiary_name,
               beneficiary_age: data.beneficiary_age,
               location: data.location,
-              target_amount: data.target_amount ? new Prisma.Decimal(data.target_amount) : null,
-              raised_amount: new Prisma.Decimal(0),
+              target_amount: targetDec,
+              raised_amount: initialRaised,
               start_date: data.start_date ? new Date(data.start_date) : null,
               end_date: data.end_date ? new Date(data.end_date) : null,
               content: sanitizedContent,
@@ -172,7 +178,7 @@ export class CampaignService {
               cta_button_text: data.cta_button_text ?? 'Help Now',
               sort_order: data.sort_order ?? 0,
               supporters_count: data.supporters_count ?? 0,
-              status: 'ACTIVE'
+              status: initialStatus
             },
             include: { category: true, featured_image: true }
           });
@@ -184,7 +190,7 @@ export class CampaignService {
               entity_id: newCampaign.id,
               user_id: auditContext.actorUserId || null,
               ip_address: auditContext.ipAddress,
-              new_values: { title: data.title, slug }
+              new_values: { title: data.title, slug, raised_amount: initialRaised.toString() }
             }
           });
 
@@ -254,6 +260,9 @@ export class CampaignService {
     if (data.beneficiary_age !== undefined) updateData.beneficiary_age = data.beneficiary_age;
     if (data.location !== undefined) updateData.location = data.location;
     if (data.target_amount !== undefined) updateData.target_amount = data.target_amount ? new Prisma.Decimal(data.target_amount) : null;
+    if (data.raised_amount !== undefined) {
+      updateData.raised_amount = data.raised_amount !== null ? new Prisma.Decimal(data.raised_amount) : new Prisma.Decimal(0);
+    }
     if (data.start_date !== undefined) updateData.start_date = data.start_date ? new Date(data.start_date) : null;
     if (data.end_date !== undefined) updateData.end_date = data.end_date ? new Date(data.end_date) : null;
     if (data.featured_image_id !== undefined) updateData.featured_image_id = data.featured_image_id ? BigInt(data.featured_image_id) : null;
@@ -264,6 +273,21 @@ export class CampaignService {
     if (data.cta_button_text !== undefined) updateData.cta_button_text = data.cta_button_text;
     if (data.sort_order !== undefined) updateData.sort_order = data.sort_order;
     if (data.supporters_count !== undefined) updateData.supporters_count = data.supporters_count;
+    
+    const effectiveRaised = updateData.raised_amount !== undefined
+      ? (updateData.raised_amount as Prisma.Decimal)
+      : campaign.raised_amount;
+    const effectiveTarget = updateData.target_amount !== undefined
+      ? (updateData.target_amount as Prisma.Decimal | null)
+      : campaign.target_amount;
+
+    if (campaign.status !== 'CANCELLED') {
+      if (effectiveTarget && effectiveRaised.gte(effectiveTarget)) {
+        updateData.status = 'COMPLETED';
+      } else if (campaign.status === 'COMPLETED' && (!effectiveTarget || effectiveRaised.lt(effectiveTarget))) {
+        updateData.status = 'ACTIVE';
+      }
+    }
     
     let baseContent = data.content !== undefined ? data.content : campaign.content;
     if (data.supporting_images !== undefined) {

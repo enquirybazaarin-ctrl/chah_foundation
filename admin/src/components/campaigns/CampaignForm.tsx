@@ -6,8 +6,6 @@ import {
   AlertTriangle, 
   Image as ImageIcon, 
   UploadCloud, 
-  Code, 
-  LayoutTemplate, 
   Plus, 
   Trash2, 
   X, 
@@ -32,11 +30,39 @@ interface CampaignFormProps {
 const nativeSelectClass =
   'h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50';
 
-const textareaClass =
-  'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 min-h-[220px] resize-y font-mono';
-
 const plainTextareaClass =
   'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 min-h-[200px] resize-y';
+
+function parseCampaignStory(rawHtml?: string | null): { heading: string; desc: string } {
+  if (!rawHtml) return { heading: '', desc: '' };
+
+  const cleaned = rawHtml.replace(/<div class="campaign-gallery-data"[^>]*>[\s\S]*?<\/div>/g, '').trim();
+
+  const headingMatch = cleaned.match(/<h[1-4][^>]*>(.*?)<\/h[1-4]>/i);
+  const heading = headingMatch ? headingMatch[1].replace(/<[^>]+>/g, '').trim() : '';
+
+  let bodyHtml = cleaned;
+  if (headingMatch) {
+    bodyHtml = bodyHtml.replace(headingMatch[0], '');
+  }
+
+  const pMatches = Array.from(bodyHtml.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi));
+  if (pMatches.length > 0) {
+    const paragraphs = pMatches
+      .map((m) => m[1].replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').trim())
+      .filter(Boolean);
+    return { heading, desc: paragraphs.join('\n\n') };
+  }
+
+  const desc = bodyHtml
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<div[^>]*>/gi, '')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .trim();
+
+  return { heading, desc };
+}
 
 const labelClass = 'block text-sm font-semibold text-gray-800 mb-1';
 const helpClass = 'mt-1 text-xs text-gray-500';
@@ -62,13 +88,9 @@ export function CampaignForm({
   const [shortDescription, setShortDescription] = useState(initialData?.short_description ?? '');
 
   // Content extraction & clean state
-  const rawInitContent = initialData?.content ?? '';
-  const cleanInitContent = rawInitContent.replace(/<div class="campaign-gallery-data"[^>]*>[\s\S]*?<\/div>/g, '').trim();
-
-  const [contentMode, setContentMode] = useState<'BUILDER' | 'HTML'>(cleanInitContent ? 'HTML' : 'BUILDER');
-  const [rawContent, setRawContent] = useState(cleanInitContent);
-  const [builderHeading, setBuilderHeading] = useState('');
-  const [builderDesc, setBuilderDesc] = useState(cleanInitContent);
+  const initialStory = parseCampaignStory(initialData?.content);
+  const [builderHeading, setBuilderHeading] = useState(initialStory.heading);
+  const [builderDesc, setBuilderDesc] = useState(initialStory.desc);
 
   // Cover Image
   const [featuredImageUrl, setFeaturedImageUrl] = useState(initialData?.featured_image_url ?? '');
@@ -103,7 +125,9 @@ export function CampaignForm({
     initialData?.target_amount ? String(parseFloat(initialData.target_amount)) : ''
   );
   const [raisedAmount, setRaisedAmount] = useState(
-    initialData?.raised_amount ? String(parseFloat(initialData.raised_amount)) : ''
+    initialData?.raised_amount !== undefined && initialData?.raised_amount !== null
+      ? String(parseFloat(initialData.raised_amount) || 0)
+      : ''
   );
   const [supportersCount, setSupportersCount] = useState(
     initialData?.supporters_count ? String(initialData.supporters_count) : '0'
@@ -226,15 +250,8 @@ export function CampaignForm({
     if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
       errors.endDate = 'End date must be after start date.';
     }
-    
-    if (contentMode === 'HTML') {
-      if (!rawContent.trim()) {
-        errors.content = 'Full campaign description/content is required.';
-      }
-    } else {
-      if (!builderDesc.trim() && !shortDescription.trim()) {
-        errors.content = 'Full campaign description is required.';
-      }
+    if (!builderDesc.trim() && !shortDescription.trim()) {
+      errors.content = 'Full campaign detailed story is required.';
     }
 
     setFieldErrors(errors);
@@ -244,12 +261,12 @@ export function CampaignForm({
   const generateBuilderHtml = (descText?: string) => {
     const textToUse = descText || builderDesc.trim() || shortDescription.trim();
     let html = `<div class="campaign-story">`;
-    if (builderHeading) {
-      html += `\n  <h2>${builderHeading}</h2>`;
+    if (builderHeading.trim()) {
+      html += `\n  <h2>${builderHeading.trim()}</h2>`;
     }
     if (textToUse) {
-      const paragraphs = textToUse.split('\n').filter(p => p.trim() !== '');
-      paragraphs.forEach(p => {
+      const paragraphs = textToUse.split('\n').map((p) => p.trim()).filter(Boolean);
+      paragraphs.forEach((p) => {
         html += `\n  <p>${p}</p>`;
       });
     }
@@ -261,7 +278,7 @@ export function CampaignForm({
     e.preventDefault();
     if (!validate()) return;
 
-    const finalContent = contentMode === 'BUILDER' ? generateBuilderHtml() : rawContent.trim();
+    const finalContent = generateBuilderHtml();
 
     const payload: CreateCampaignPayload = {
       title: title.trim(),
@@ -271,7 +288,7 @@ export function CampaignForm({
       beneficiary_age: beneficiaryAge ? Number(beneficiaryAge) : undefined,
       location: location.trim() || undefined,
       target_amount: targetAmount ? Number(targetAmount) : undefined,
-      raised_amount: raisedAmount ? Number(raisedAmount) : 0,
+      raised_amount: raisedAmount !== '' && !isNaN(Number(raisedAmount)) ? Number(raisedAmount) : 0,
       featured_image_url: featuredImageUrl.trim() || undefined,
       supporting_images: supportingImages,
       is_featured: isFeatured,
@@ -391,76 +408,46 @@ export function CampaignForm({
 
       {/* STEP 2: Full Description / Content */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-xs space-y-4">
-        <div className="border-b border-gray-100 pb-3 flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">2</span>
-              Full Campaign Story & Description <span className="text-red-500">*</span>
-            </h2>
-            <p className="text-xs text-gray-500 mt-0.5">Detailed description shown on the campaign's dedicated page</p>
-          </div>
-          <div className="flex items-center gap-1.5 bg-gray-100 rounded-lg p-1">
-            <button
-              type="button"
-              onClick={() => {
-                if (contentMode === 'HTML' && rawContent) setBuilderDesc(rawContent);
-                setContentMode('BUILDER');
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                contentMode === 'BUILDER' ? 'bg-white text-blue-700 shadow-xs' : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <LayoutTemplate className="w-3.5 h-3.5" /> Plain Text
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (contentMode === 'BUILDER' && builderDesc) setRawContent(generateBuilderHtml());
-                setContentMode('HTML');
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                contentMode === 'HTML' ? 'bg-white text-blue-700 shadow-xs' : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Code className="w-3.5 h-3.5" /> HTML Mode
-            </button>
-          </div>
+        <div className="border-b border-gray-100 pb-3">
+          <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">2</span>
+            Full Campaign Story & Description <span className="text-red-500">*</span>
+          </h2>
+          <p className="text-xs text-gray-500 mt-0.5">Detailed narrative and case background shown on the campaign&apos;s page</p>
         </div>
 
-        {contentMode === 'BUILDER' ? (
-          <div className="space-y-4">
-            <div>
-              <label className={labelClass}>Section Heading (Optional)</label>
-              <Input
-                value={builderHeading}
-                onChange={(e) => setBuilderHeading(e.target.value)}
-                placeholder="e.g. Why Amit's education requires immediate support"
-                disabled={isSubmitting}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Detailed Story (Write in plain paragraphs)</label>
-              <textarea
-                className={plainTextareaClass}
-                value={builderDesc}
-                onChange={(e) => setBuilderDesc(e.target.value)}
-                placeholder="Write the full case background, hospital details, school needs, or family situation here. Separate each paragraph with an empty line."
-                disabled={isSubmitting}
-              />
-            </div>
-          </div>
-        ) : (
+        <div className="space-y-4">
           <div>
-            <textarea
-              className={textareaClass}
-              value={rawContent}
-              onChange={(e) => setRawContent(e.target.value)}
-              placeholder="<p>Full HTML content for the campaign story...</p>"
+            <label htmlFor="campaign-story-heading" className={labelClass}>Section Heading (Optional)</label>
+            <Input
+              id="campaign-story-heading"
+              value={builderHeading}
+              onChange={(e) => setBuilderHeading(e.target.value)}
+              placeholder="e.g. Why Amit's education requires immediate support"
               disabled={isSubmitting}
             />
+            <p className={helpClass}>Optional section header displayed above the detailed story.</p>
           </div>
-        )}
-        {fieldErrors.content && <p className={errorClass}>{fieldErrors.content}</p>}
+          <div>
+            <label htmlFor="campaign-story-desc" className={labelClass}>
+              Detailed Story <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              id="campaign-story-desc"
+              rows={8}
+              className={plainTextareaClass}
+              value={builderDesc}
+              onChange={(e) => setBuilderDesc(e.target.value)}
+              placeholder="Write the full case background, hospital details, school needs, or family situation here. Separate each paragraph with an empty line."
+              disabled={isSubmitting}
+            />
+            {fieldErrors.content ? (
+              <p className={errorClass}>{fieldErrors.content}</p>
+            ) : (
+              <p className={helpClass}>Write in plain paragraphs. Each line break creates a clean, well-spaced paragraph on the website.</p>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* STEP 3: Thumbnail & Supporting Images */}

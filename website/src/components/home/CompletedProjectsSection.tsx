@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
-import { MapPin, CheckCircle2, ArrowRight, FolderOpen, Check, ChevronDown } from "lucide-react";
+import { MapPin, CheckCircle2, ArrowRight, FolderOpen, Check, ChevronDown, X } from "lucide-react";
 import { cn } from "cn";
 import type { ProjectItem } from "@/lib/api";
+import { CELEBRATION_ITEMS } from "@/components/layout/Header";
 
 interface CompletedProjectsSectionProps {
   projects: ProjectItem[];
@@ -32,17 +34,86 @@ export function CompletedProjectsSection({ projects }: CompletedProjectsSectionP
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [isCelebrationsExpanded, setIsCelebrationsExpanded] = useState(false);
+
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuCoords, setMenuCoords] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+    setMounted(true);
+  }, []);
+
+  const updateCoords = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const rightOffset = Math.max(16, window.innerWidth - rect.right);
+      setMenuCoords({
+        top: rect.bottom + 8,
+        right: rightOffset,
+      });
+    }
+  };
+
+  const handleToggleDropdown = () => {
+    if (dropdownOpen) {
+      setDropdownOpen(false);
+    } else {
+      updateCoords();
+      setDropdownOpen(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+
+    const onScrollOrResize = () => {
+      updateCoords();
+    };
+
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (
+        triggerRef.current &&
+        !triggerRef.current.contains(target) &&
+        menuRef.current &&
+        !menuRef.current.contains(target)
+      ) {
         setDropdownOpen(false);
       }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setDropdownOpen(false);
+      }
+    };
+
+    window.addEventListener("scroll", onScrollOrResize, { passive: true });
+    window.addEventListener("resize", onScrollOrResize);
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("touchstart", handleOutsideClick);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("scroll", onScrollOrResize);
+      window.removeEventListener("resize", onScrollOrResize);
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [dropdownOpen]);
+
+  useEffect(() => {
+    if (dropdownOpen && typeof window !== "undefined" && window.innerWidth < 640) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [dropdownOpen]);
 
   // Determine available categories while preserving preferred order
   const categories = useMemo(() => {
@@ -67,33 +138,54 @@ export function CompletedProjectsSection({ projects }: CompletedProjectsSectionP
     return [...ordered, ...Array.from(presentCategories)];
   }, [projects]);
 
-  // Main 4 categories for mobile + remaining into Other dropdown
-  const { mainCategories, otherCategories } = useMemo(() => {
-    const main: string[] = [];
-    const other: string[] = [];
-    const mainTargets = ["women empowerment", "elder care", "hunger relief", "healthcare"];
+  // Matching logic for Health Support Drive and Education Support Drive
+  const isHealth = (p: ProjectItem) => {
+    const cat = (p.category || "").toLowerCase();
+    const title = (p.title || "").toLowerCase();
+    const slug = (p.slug || "").toLowerCase();
+    return cat.includes("health") || title.includes("health") || slug.includes("health");
+  };
 
-    categories.forEach((cat) => {
-      const isMain = mainTargets.includes(cat.toLowerCase().trim());
-      if (isMain) {
-        main.push(cat);
-      } else {
-        other.push(cat);
+  const isEducation = (p: ProjectItem) => {
+    const cat = (p.category || "").toLowerCase();
+    const title = (p.title || "").toLowerCase();
+    const slug = (p.slug || "").toLowerCase();
+    return cat.includes("educat") || title.includes("educat") || slug.includes("educat");
+  };
+
+  const healthCount = useMemo(() => projects.filter(isHealth).length, [projects]);
+  const educationCount = useMemo(() => projects.filter(isEducation).length, [projects]);
+
+  // Distinct categories for the "Others" dropdown
+  const otherCategories = useMemo(() => {
+    const present = new Set<string>();
+    projects.forEach((p) => {
+      if (!isHealth(p) && !isEducation(p) && p.category?.trim()) {
+        present.add(p.category.trim());
       }
     });
+    return Array.from(present);
+  }, [projects]);
 
-    return { mainCategories: main, otherCategories: other };
-  }, [categories]);
+  const othersTotalCount = useMemo(() => {
+    return projects.filter((p) => !isHealth(p) && !isEducation(p)).length;
+  }, [projects]);
 
   const isOtherActive = useMemo(() => {
-    return otherCategories.some(
-      (cat) => cat.toLowerCase() === selectedCategory.toLowerCase()
+    return (
+      selectedCategory === "others" ||
+      otherCategories.some(
+        (cat) => cat.toLowerCase() === selectedCategory.toLowerCase()
+      )
     );
   }, [otherCategories, selectedCategory]);
 
   // Filter projects based on active pill
   const filteredProjects = useMemo(() => {
     if (selectedCategory === "all") return projects;
+    if (selectedCategory === "health") return projects.filter(isHealth);
+    if (selectedCategory === "education") return projects.filter(isEducation);
+    if (selectedCategory === "others") return projects.filter((p) => !isHealth(p) && !isEducation(p));
     return projects.filter(
       (p) => p.category?.trim().toLowerCase() === selectedCategory.toLowerCase()
     );
@@ -128,26 +220,29 @@ export function CompletedProjectsSection({ projects }: CompletedProjectsSectionP
           <p className="mt-3 sm:mt-4 text-sm sm:text-base md:text-lg text-slate-600 leading-relaxed max-w-2xl">
             Explore the initiatives completed by CHAH Foundation and the communities we&apos;ve worked to support across India.
           </p>
+        </div>
 
-          {/* Category Filter Tabs */}
-          <div className="mt-8 sm:mt-10 grid grid-cols-3 gap-1.5 sm:gap-3 sm:flex sm:flex-wrap sm:justify-center w-full">
-            {/* All Projects Pill */}
+        {/* Category Filter Tabs - Exactly 4 Buttons in 1 Single Row (No Border Cropping) */}
+        <div className="mt-8 sm:mt-10 mb-12 sm:mb-14 w-full flex justify-center">
+          <div className="flex flex-nowrap items-center justify-start sm:justify-center gap-2 sm:gap-3.5 max-w-full overflow-x-auto sm:overflow-visible hide-scrollbar py-2.5 px-4 sm:px-6">
+            {/* 1. All Projects Pill */}
             <button
+              type="button"
               onClick={() => {
                 handleCategoryChange("all");
                 setDropdownOpen(false);
               }}
               className={cn(
-                "w-full h-full min-h-[44px] sm:min-h-0 sm:w-auto px-1.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-sm font-semibold transition-all duration-200 border flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-lime-500/40",
+                "shrink-0 whitespace-nowrap px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 border flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-lime-500/40",
                 selectedCategory === "all"
-                  ? "bg-lime-500 border-lime-500 text-slate-950 shadow-xs shadow-lime-500/20"
+                  ? "bg-lime-500 border-lime-500 text-slate-950 shadow-xs shadow-lime-500/20 font-bold"
                   : "bg-white border-slate-200/90 text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-50/60"
               )}
             >
-              <span className="truncate max-w-full text-center sm:text-left">All Projects</span>
+              <span>All Projects</span>
               <span
                 className={cn(
-                  "text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-full font-bold transition-colors shrink-0",
+                  "text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold transition-colors shrink-0",
                   selectedCategory === "all"
                     ? "bg-slate-950/15 text-slate-950"
                     : "bg-slate-100 text-slate-500"
@@ -157,113 +252,96 @@ export function CompletedProjectsSection({ projects }: CompletedProjectsSectionP
               </span>
             </button>
 
-            {/* Main 4 Categories (Visible on both Mobile and Desktop) */}
-            {mainCategories.map((cat) => {
-              const count = projects.filter(
-                (p) => p.category?.trim().toLowerCase() === cat.toLowerCase()
-              ).length;
-              const isActive = selectedCategory.toLowerCase() === cat.toLowerCase();
-
-              return (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    handleCategoryChange(cat);
-                    setDropdownOpen(false);
-                  }}
-                  className={cn(
-                    "w-full h-full min-h-[44px] sm:min-h-0 sm:w-auto px-1.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-sm font-semibold transition-all duration-200 border flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-lime-500/40",
-                    isActive
-                      ? "bg-lime-500 border-lime-500 text-slate-950 shadow-xs shadow-lime-500/20"
-                      : "bg-white border-slate-200/90 text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-50/60"
-                  )}
-                >
-                  <span className="truncate max-w-full text-center sm:text-left">{cat}</span>
-                  <span
-                    className={cn(
-                      "text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-full font-bold transition-colors shrink-0",
-                      isActive
-                        ? "bg-slate-950/15 text-slate-950"
-                        : "bg-slate-100 text-slate-500"
-                    )}
-                  >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-
-            {/* Other Categories Dropdown Button (Visible on BOTH Mobile and Desktop) */}
-            <div className="relative w-full sm:w-auto h-full" ref={dropdownRef}>
-              <button
-                type="button"
-                onClick={() => setDropdownOpen(!dropdownOpen)}
+            {/* 2. Health Support Drive Pill */}
+            <button
+              type="button"
+              onClick={() => {
+                handleCategoryChange("health");
+                setDropdownOpen(false);
+              }}
+              className={cn(
+                "shrink-0 whitespace-nowrap px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 border flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-lime-500/40",
+                selectedCategory === "health"
+                  ? "bg-lime-500 border-lime-500 text-slate-950 shadow-xs shadow-lime-500/20 font-bold"
+                  : "bg-white border-slate-200/90 text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-50/60"
+              )}
+            >
+              <span>Health Support Drive</span>
+              <span
                 className={cn(
-                  "w-full h-full min-h-[44px] sm:min-h-0 sm:w-auto px-2 sm:px-5 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-sm font-semibold transition-all duration-200 border flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-lime-500/40",
+                  "text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold transition-colors shrink-0",
+                  selectedCategory === "health"
+                    ? "bg-slate-950/15 text-slate-950"
+                    : "bg-slate-100 text-slate-500"
+                )}
+              >
+                {healthCount}
+              </span>
+            </button>
+
+            {/* 3. Education Support Drive Pill */}
+            <button
+              type="button"
+              onClick={() => {
+                handleCategoryChange("education");
+                setDropdownOpen(false);
+              }}
+              className={cn(
+                "shrink-0 whitespace-nowrap px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 border flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-lime-500/40",
+                selectedCategory === "education"
+                  ? "bg-lime-500 border-lime-500 text-slate-950 shadow-xs shadow-lime-500/20 font-bold"
+                  : "bg-white border-slate-200/90 text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-50/60"
+              )}
+            >
+              <span>Education Support Drive</span>
+              <span
+                className={cn(
+                  "text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold transition-colors shrink-0",
+                  selectedCategory === "education"
+                    ? "bg-slate-950/15 text-slate-950"
+                    : "bg-slate-100 text-slate-500"
+                )}
+              >
+                {educationCount}
+              </span>
+            </button>
+
+            {/* 4. Others Dropdown Pill */}
+            <div className="relative shrink-0">
+              <button
+                ref={triggerRef}
+                type="button"
+                aria-expanded={dropdownOpen}
+                aria-haspopup="true"
+                onClick={handleToggleDropdown}
+                className={cn(
+                  "shrink-0 whitespace-nowrap px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 border flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-lime-500/40",
                   isOtherActive
-                    ? "bg-lime-500 border-lime-500 text-slate-950 shadow-xs shadow-lime-500/20"
+                    ? "bg-lime-500 border-lime-500 text-slate-950 shadow-xs shadow-lime-500/20 font-bold"
                     : dropdownOpen
                     ? "bg-slate-100 border-slate-300 text-slate-900"
                     : "bg-white border-slate-200/90 text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-50/60"
                 )}
               >
-                <span className="truncate max-w-[65px] sm:max-w-none text-center sm:text-left">
-                  {isOtherActive ? selectedCategory : "Other Causes"}
+                <span className="max-w-[120px] sm:max-w-[150px] truncate">
+                  {selectedCategory !== "others" && isOtherActive ? selectedCategory : "Others"}
                 </span>
-                {isOtherActive ? (
-                  <span className="text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-full font-bold bg-slate-950/15 text-slate-950 shrink-0">
-                    {projects.filter(p => p.category?.trim().toLowerCase() === selectedCategory.toLowerCase()).length}
-                  </span>
-                ) : (
-                  <span className="text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-full font-bold bg-slate-100 text-slate-500 shrink-0">
-                    {otherCategories.length}
-                  </span>
-                )}
+                <span
+                  className={cn(
+                    "text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold shrink-0",
+                    isOtherActive
+                      ? "bg-slate-950/15 text-slate-950"
+                      : "bg-slate-100 text-slate-500"
+                  )}
+                >
+                  {selectedCategory !== "others" && isOtherActive
+                    ? projects.filter(
+                        (p) => p.category?.trim().toLowerCase() === selectedCategory.toLowerCase()
+                      ).length
+                    : othersTotalCount}
+                </span>
                 <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200 shrink-0", dropdownOpen && "rotate-180")} />
               </button>
-
-              {/* Dropdown Menu Panel (Works on Mobile & Desktop) */}
-              {dropdownOpen && (
-                <div className="absolute top-full mt-2 right-0 sm:right-0 sm:left-auto w-[280px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-slate-200 z-50 p-2 max-h-[360px] overflow-y-auto animate-in fade-in slide-in-from-top-1 text-left">
-                  <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 mb-1">
-                    Other Categories ({otherCategories.length})
-                  </div>
-                  {otherCategories.map((cat) => {
-                    const count = projects.filter(
-                      (p) => p.category?.trim().toLowerCase() === cat.toLowerCase()
-                    ).length;
-                    const isActive = selectedCategory.toLowerCase() === cat.toLowerCase();
-
-                    return (
-                      <button
-                        key={cat}
-                        onClick={() => {
-                          handleCategoryChange(cat);
-                          setDropdownOpen(false);
-                        }}
-                        className={cn(
-                          "w-full text-left px-3 py-2 rounded-xl text-xs sm:text-sm font-medium flex items-center justify-between transition-colors",
-                          isActive
-                            ? "bg-lime-50 text-lime-900 font-bold"
-                            : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-                        )}
-                      >
-                        <span className="truncate pr-2">{cat}</span>
-                        <span
-                          className={cn(
-                            "text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold shrink-0",
-                            isActive
-                              ? "bg-lime-200 text-lime-900"
-                              : "bg-slate-100 text-slate-500"
-                          )}
-                        >
-                          {count}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -402,6 +480,353 @@ export function CompletedProjectsSection({ projects }: CompletedProjectsSectionP
         )}
 
       </div>
+
+      {/* Portaled Dropdown Menu & Mobile Drawer (Escapes all overflow clipping) */}
+      {mounted && dropdownOpen && typeof document !== "undefined" && createPortal(
+        <>
+          {/* DESKTOP / TABLET FLOATING DROPDOWN (sm and up) */}
+          <div
+            ref={menuRef}
+            style={{
+              top: `${menuCoords.top}px`,
+              right: `${menuCoords.right}px`,
+            }}
+            className="hidden sm:block fixed z-[9999] w-[300px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 p-2.5 animate-in fade-in zoom-in-95 duration-150 text-left"
+          >
+            <div className="px-3 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 mb-1.5 flex items-center justify-between">
+              <span>Other Causes</span>
+              <span className="text-[10px] font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+                {otherCategories.length} Categories
+              </span>
+            </div>
+
+            <div className="max-h-[340px] overflow-y-auto space-y-1 pr-1">
+              {/* All Other Causes */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleCategoryChange("others");
+                  setDropdownOpen(false);
+                }}
+                className={cn(
+                  "w-full text-left px-3 py-2.5 rounded-xl text-xs sm:text-sm font-medium flex items-center justify-between transition-colors cursor-pointer group",
+                  selectedCategory === "others"
+                    ? "bg-lime-50 text-lime-900 font-bold"
+                    : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                )}
+              >
+                <div className="flex items-center gap-2 truncate pr-2">
+                  {selectedCategory === "others" ? (
+                    <Check className="w-3.5 h-3.5 text-lime-600 shrink-0" />
+                  ) : (
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-slate-400 shrink-0" />
+                  )}
+                  <span className="truncate">All Other Causes</span>
+                </div>
+                <span
+                  className={cn(
+                    "text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold shrink-0",
+                    selectedCategory === "others"
+                      ? "bg-lime-200 text-lime-900"
+                      : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
+                  )}
+                >
+                  {othersTotalCount}
+                </span>
+              </button>
+
+              <div className="border-t border-slate-100 my-1" />
+
+              {otherCategories.map((cat) => {
+                const count = projects.filter(
+                  (p) => p.category?.trim().toLowerCase() === cat.toLowerCase()
+                ).length;
+                const isActive = selectedCategory.toLowerCase() === cat.toLowerCase();
+                const isCelebrationCat = cat.toLowerCase().includes("celebrat") || cat.toLowerCase().includes("occasion");
+
+                if (isCelebrationCat) {
+                  return (
+                    <div key={cat} className="rounded-xl border border-slate-100 bg-slate-50/60 overflow-hidden my-1">
+                      <div className="flex items-center justify-between px-3 py-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleCategoryChange(cat);
+                            setDropdownOpen(false);
+                          }}
+                          className={cn(
+                            "flex-1 text-left text-xs sm:text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer",
+                            isActive ? "text-lime-900 font-bold" : "text-slate-700 hover:text-slate-900"
+                          )}
+                        >
+                          {isActive ? (
+                            <Check className="w-3.5 h-3.5 text-lime-600 shrink-0" />
+                          ) : (
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
+                          )}
+                          <span className="truncate">{cat}</span>
+                        </button>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span
+                            className={cn(
+                              "text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold shrink-0",
+                              isActive
+                                ? "bg-lime-200 text-lime-900"
+                                : "bg-slate-100 text-slate-500"
+                            )}
+                          >
+                            {count}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsCelebrationsExpanded(!isCelebrationsExpanded);
+                            }}
+                            className="p-1 rounded hover:bg-slate-200/80 text-slate-400 hover:text-slate-700 cursor-pointer"
+                            aria-label="Toggle Celebrations dropdown"
+                          >
+                            <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200", isCelebrationsExpanded && "rotate-180")} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {isCelebrationsExpanded && (
+                        <div className="flex flex-col pl-3 pr-2 py-1.5 space-y-1 bg-lime-50/60 border-t border-slate-100">
+                          <div className="px-2 py-0.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                            Festivals ({CELEBRATION_ITEMS.length})
+                          </div>
+                          {CELEBRATION_ITEMS.map((item) => (
+                            <Link
+                              key={item.slug}
+                              href={item.href}
+                              onClick={() => setDropdownOpen(false)}
+                              className="px-2.5 py-1.5 text-xs text-slate-700 hover:text-[#003399] font-medium transition-colors flex items-center justify-between rounded-lg hover:bg-white"
+                            >
+                              <span>{item.title}</span>
+                              <span className="text-slate-400 text-[10px]">&rarr;</span>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => {
+                      handleCategoryChange(cat);
+                      setDropdownOpen(false);
+                    }}
+                    className={cn(
+                      "w-full text-left px-3 py-2.5 rounded-xl text-xs sm:text-sm font-medium flex items-center justify-between transition-colors cursor-pointer group",
+                      isActive
+                        ? "bg-lime-50 text-lime-900 font-bold"
+                        : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 truncate pr-2">
+                      {isActive ? (
+                        <Check className="w-3.5 h-3.5 text-lime-600 shrink-0" />
+                      ) : (
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-slate-400 shrink-0" />
+                      )}
+                      <span className="truncate">{cat}</span>
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold shrink-0",
+                        isActive
+                          ? "bg-lime-200 text-lime-900"
+                          : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
+                      )}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+
+              {otherCategories.length === 0 && (
+                <div className="py-4 text-center text-xs text-slate-400">
+                  No additional categories available.
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* MOBILE BOTTOM SHEET DRAWER (< sm) */}
+          <div className="sm:hidden fixed inset-0 z-[9999] flex flex-col justify-end">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in"
+              onClick={() => setDropdownOpen(false)}
+            />
+
+            {/* Drawer */}
+            <div className="relative bg-white rounded-t-3xl shadow-2xl p-5 max-h-[80vh] flex flex-col z-10 animate-in slide-in-from-bottom duration-200">
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 shrink-0" />
+
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
+                <div>
+                  <h3 className="font-heading font-bold text-base text-[#003399]">Select Other Cause</h3>
+                  <p className="text-xs text-slate-500">Filter initiatives by community focus</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDropdownOpen(false)}
+                  className="w-8 h-8 rounded-full bg-slate-100 active:bg-slate-200 flex items-center justify-center text-slate-500 active:text-slate-800"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto mt-3 space-y-1.5 pb-6">
+                {/* All Other Causes */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleCategoryChange("others");
+                    setDropdownOpen(false);
+                  }}
+                  className={cn(
+                    "w-full text-left px-3.5 py-3 rounded-xl text-sm font-medium flex items-center justify-between transition-colors",
+                    selectedCategory === "others"
+                      ? "bg-lime-50 text-lime-900 font-bold border border-lime-300"
+                      : "text-slate-700 bg-slate-50 active:bg-slate-100"
+                  )}
+                >
+                  <div className="flex items-center gap-2 truncate pr-2">
+                    {selectedCategory === "others" && <Check className="w-4 h-4 text-lime-600 shrink-0" />}
+                    <span className="truncate">All Other Causes</span>
+                  </div>
+                  <span
+                    className={cn(
+                      "text-xs px-2.5 py-0.5 rounded-full font-bold shrink-0",
+                      selectedCategory === "others"
+                        ? "bg-lime-200 text-lime-900"
+                        : "bg-slate-200 text-slate-600"
+                    )}
+                  >
+                    {othersTotalCount}
+                  </span>
+                </button>
+
+                <div className="border-t border-slate-100 my-2" />
+
+                {otherCategories.map((cat) => {
+                  const count = projects.filter(
+                    (p) => p.category?.trim().toLowerCase() === cat.toLowerCase()
+                  ).length;
+                  const isActive = selectedCategory.toLowerCase() === cat.toLowerCase();
+                  const isCelebrationCat = cat.toLowerCase().includes("celebrat") || cat.toLowerCase().includes("occasion");
+
+                  if (isCelebrationCat) {
+                    return (
+                      <div key={cat} className="rounded-xl border border-slate-200 bg-slate-50 overflow-hidden my-1">
+                        <div className="flex items-center justify-between px-3.5 py-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleCategoryChange(cat);
+                              setDropdownOpen(false);
+                            }}
+                            className={cn(
+                              "flex-1 text-left text-sm font-medium flex items-center gap-2",
+                              isActive ? "text-lime-900 font-bold" : "text-slate-700"
+                            )}
+                          >
+                            {isActive && <Check className="w-4 h-4 text-lime-600 shrink-0" />}
+                            <span className="truncate">{cat}</span>
+                          </button>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span
+                              className={cn(
+                                "text-xs px-2.5 py-0.5 rounded-full font-bold shrink-0",
+                                isActive
+                                  ? "bg-lime-200 text-lime-900"
+                                  : "bg-slate-200 text-slate-600"
+                              )}
+                            >
+                              {count}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsCelebrationsExpanded(!isCelebrationsExpanded);
+                              }}
+                              className="p-1 rounded hover:bg-slate-200 text-slate-500 cursor-pointer"
+                              aria-label="Toggle Celebrations dropdown"
+                            >
+                              <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", isCelebrationsExpanded && "rotate-180")} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {isCelebrationsExpanded && (
+                          <div className="flex flex-col pl-3 pr-2 py-2 space-y-1 bg-lime-50/60 border-t border-slate-200">
+                            <div className="px-2 py-0.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                              Festivals ({CELEBRATION_ITEMS.length})
+                            </div>
+                            {CELEBRATION_ITEMS.map((item) => (
+                              <Link
+                                key={item.slug}
+                                href={item.href}
+                                onClick={() => setDropdownOpen(false)}
+                                className="px-2.5 py-2 text-xs text-slate-700 hover:text-[#003399] font-medium transition-colors flex items-center justify-between rounded-lg bg-white border border-slate-100"
+                              >
+                                <span>{item.title}</span>
+                                <span className="text-slate-400 text-xs">&rarr;</span>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => {
+                        handleCategoryChange(cat);
+                        setDropdownOpen(false);
+                      }}
+                      className={cn(
+                        "w-full text-left px-3.5 py-3 rounded-xl text-sm font-medium flex items-center justify-between transition-colors",
+                        isActive
+                          ? "bg-lime-50 text-lime-900 font-bold border border-lime-300"
+                          : "text-slate-700 bg-slate-50 active:bg-slate-100"
+                      )}
+                    >
+                      <div className="flex items-center gap-2 truncate pr-2">
+                        {isActive && <Check className="w-4 h-4 text-lime-600 shrink-0" />}
+                        <span className="truncate">{cat}</span>
+                      </div>
+                      <span
+                        className={cn(
+                          "text-xs px-2.5 py-0.5 rounded-full font-bold shrink-0",
+                          isActive
+                            ? "bg-lime-200 text-lime-900"
+                            : "bg-slate-200 text-slate-600"
+                        )}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
     </section>
   );
 }

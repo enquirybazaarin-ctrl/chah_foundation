@@ -34,12 +34,10 @@ describe('Campaigns Module (Phase E)', () => {
     await prisma.payment.deleteMany();
     await prisma.donation.deleteMany();
     await prisma.donor.deleteMany();
-    await prisma.campaign.deleteMany();
-    await prisma.campaignCategory.deleteMany();
-    await prisma.user.deleteMany();
-    await prisma.rolePermission.deleteMany();
-    await prisma.permission.deleteMany();
-    await prisma.role.deleteMany();
+    await prisma.campaignCategory.deleteMany({ where: { slug: 'test-category' } });
+    await prisma.rolePermission.deleteMany({ where: { role: { name: { in: ['CampaignAdmin', 'CampaignUser'] } } } });
+    await prisma.permission.deleteMany({ where: { resource: 'campaigns' } });
+    await prisma.role.deleteMany({ where: { name: { in: ['CampaignAdmin', 'CampaignUser'] } } });
 
     // Permissions
     pCreate = await prisma.permission.create({ data: { action: 'create', resource: 'campaigns' } });
@@ -98,11 +96,11 @@ describe('Campaigns Module (Phase E)', () => {
     await prisma.donation.deleteMany();
     await prisma.donor.deleteMany();
     await prisma.campaign.deleteMany();
-    await prisma.campaignCategory.deleteMany();
-    await prisma.user.deleteMany();
-    await prisma.rolePermission.deleteMany();
-    await prisma.permission.deleteMany();
-    await prisma.role.deleteMany();
+    await prisma.campaignCategory.deleteMany({ where: { slug: 'test-category' } });
+    await prisma.user.deleteMany({ where: { email: { in: ['admin.campaign@chah.test', 'user.campaign@chah.test'] } } });
+    await prisma.rolePermission.deleteMany({ where: { role: { name: { in: ['CampaignAdmin', 'CampaignUser'] } } } });
+    await prisma.permission.deleteMany({ where: { resource: 'campaigns' } });
+    await prisma.role.deleteMany({ where: { name: { in: ['CampaignAdmin', 'CampaignUser'] } } });
   });
 
   afterEach(async () => {
@@ -196,19 +194,19 @@ describe('Campaigns Module (Phase E)', () => {
       expect(slugs).toContain('concurrent-campaign-1');
     });
 
-    it('should ignore raised_amount in create payload', async () => {
+    it('should accept raised_amount in create payload', async () => {
       const res = await request(app)
         .post('/api/v1/campaigns')
         .set('Cookie', `token=${adminToken}`)
         .send({
-          title: 'Fake Money',
+          title: 'Initial Raised Campaign',
           category_id: testCategoryId.toString(),
           content: 'Test',
-          raised_amount: 1000000 // Should be ignored
+          raised_amount: 50000
         });
       
       expect(res.status).toBe(201);
-      expect(res.body.data.raised_amount).toBe('0');
+      expect(res.body.data.raised_amount).toBe('50000');
     });
   });
 
@@ -261,7 +259,7 @@ describe('Campaigns Module (Phase E)', () => {
       expect(publicRes.body.data.status).toBe('CANCELLED');
     });
 
-    it('should ignore raised_amount in update payload', async () => {
+    it('should accept raised_amount in update payload', async () => {
       const res = await request(app)
         .patch(`/api/v1/campaigns/${campaignId}`)
         .set('Cookie', `token=${adminToken}`)
@@ -270,7 +268,7 @@ describe('Campaigns Module (Phase E)', () => {
         });
       
       expect(res.status).toBe(200);
-      expect(res.body.data.raised_amount).toBe('0');
+      expect(res.body.data.raised_amount).toBe('99999');
     });
   });
 

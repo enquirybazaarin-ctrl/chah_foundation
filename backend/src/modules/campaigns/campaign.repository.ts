@@ -59,9 +59,11 @@ export class CampaignRepository {
     const educationCampaigns = await prisma.campaign.findMany({
       where: {
         status: 'ACTIVE',
-        category: {
-          slug: { in: ['education', 'education-and-school-support'] }
-        }
+        OR: [
+          { category: { slug: { in: ['education', 'education-and-school-support', 'school-support'] } } },
+          { category: { slug: { contains: 'edu' } } },
+          { category: { name: { contains: 'Education' } } }
+        ]
       },
       include: { category: true, featured_image: true },
       orderBy: [
@@ -246,9 +248,11 @@ export class CampaignRepository {
     return prisma.campaign.findMany({
       where: {
         status: 'ACTIVE',
-        category: {
-          slug: { in: ['medical-emergency', 'medical', 'medical-cases'] }
-        }
+        OR: [
+          { category: { slug: { in: ['medical-emergency', 'medical', 'medical-cases'] } } },
+          { category: { slug: { contains: 'medical' } } },
+          { category: { name: { contains: 'Medical' } } }
+        ]
       },
       include: { category: true, featured_image: true },
       orderBy: [
@@ -296,23 +300,39 @@ export class CampaignRepository {
   }
 
   public async findCategorySectionCampaigns(categorySlug: string, limit: number = 4) {
-    let slugs = [categorySlug];
+    let orConditions: any[] = [{ category: { slug: categorySlug } }];
+
     if (categorySlug === 'elder-care' || categorySlug === 'eldercare') {
-      slugs = ['elder-care', 'eldercare', 'elderly-care'];
+      orConditions = [
+        { category: { slug: { in: ['elder-care', 'eldercare', 'elderly-care'] } } },
+        { category: { slug: { contains: 'elder' } } },
+        { category: { name: { contains: 'Elder' } } }
+      ];
     } else if (categorySlug === 'food-and-hunger' || categorySlug === 'food') {
-      slugs = ['food-and-hunger', 'food', 'food-distribution', 'hunger'];
+      orConditions = [
+        { category: { slug: { in: ['food-and-hunger', 'food', 'food-distribution', 'hunger'] } } },
+        { category: { slug: { contains: 'food' } } },
+        { category: { slug: { contains: 'hunger' } } },
+        { category: { name: { contains: 'Food' } } }
+      ];
     } else if (categorySlug === 'education') {
-      slugs = ['education', 'education-and-school-support'];
+      orConditions = [
+        { category: { slug: { in: ['education', 'education-and-school-support', 'school-support'] } } },
+        { category: { slug: { contains: 'edu' } } },
+        { category: { name: { contains: 'Education' } } }
+      ];
     } else if (categorySlug === 'medical-emergency') {
-      slugs = ['medical-emergency', 'medical', 'medical-cases'];
+      orConditions = [
+        { category: { slug: { in: ['medical-emergency', 'medical', 'medical-cases'] } } },
+        { category: { slug: { contains: 'medical' } } },
+        { category: { name: { contains: 'Medical' } } }
+      ];
     }
 
     return prisma.campaign.findMany({
       where: {
         status: 'ACTIVE',
-        category: {
-          slug: { in: slugs }
-        }
+        OR: orConditions
       },
       include: { category: true, featured_image: true },
       orderBy: [{ is_featured: 'desc' }, { sort_order: 'asc' }, { created_at: 'desc' }],

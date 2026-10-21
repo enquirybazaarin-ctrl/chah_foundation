@@ -64,6 +64,133 @@ const MOCK_OCCASION_CAMPAIGNS: Record<string, any> = {
       { name: "Sunita & Arvind", amount: 5000, note: "Happy 5th Anniversary! Beautiful way to celebrate.", time: "Yesterday" },
       { name: "Kunal Mathur", amount: 2500, note: "Congratulations to both of you!", time: "3 days ago" },
     ]
+  },
+  "rakshabandhan-celebration": {
+    slug: "rakshabandhan-celebration",
+    title: "Rakshabandhan Celebration — Sibling Love for Shelter Children",
+    occasion: "Festival",
+    creator_name: "CHAH Youth Collective",
+    creator_avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300&auto=format&fit=crop",
+    cover_image_url: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?q=80&w=1200&auto=format&fit=crop",
+    target_amount: 35000,
+    raised_amount: 28400,
+    supporters_count: 42,
+    cause_title: "Festival Sweets, Rakhi Kits & Nutrition Hampers",
+    dedication_note: "Tying sacred Rakhis and distributing wholesome festival meal hampers to 350+ orphaned and vulnerable children who deserve to feel cherished and protected.",
+    created_at: "2026-08-15",
+    recent_supporters: [
+      { name: "Sneha Kapur", amount: 2500, note: "Happy Raksha Bandhan to all beautiful kids!", time: "Today" },
+      { name: "Amitabh Verma", amount: 2000, note: "Such a heartwarming initiative.", time: "Yesterday" },
+      { name: "Rohit & Megha", amount: 1500, note: "Lots of love from our family.", time: "2 days ago" },
+    ]
+  },
+  "independence-day": {
+    slug: "independence-day",
+    title: "Independence Day Celebration — Freedom from Hunger & Illiteracy",
+    occasion: "Festival",
+    creator_name: "CHAH Citizen Ambassadors",
+    creator_avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop",
+    cover_image_url: "https://images.unsplash.com/photo-1532375810709-75b1da00537c?q=80&w=1200&auto=format&fit=crop",
+    target_amount: 50000,
+    raised_amount: 41200,
+    supporters_count: 68,
+    cause_title: "Tricolor Educational Kits & Nutritious Breakfasts",
+    dedication_note: "Celebrating India's Independence by equipping slum learning centers with books, national flags, stationery kits, and immunity breakfast packets.",
+    created_at: "2026-08-10",
+    recent_supporters: [
+      { name: "Col. R. S. Bhatia (Retd.)", amount: 5000, note: "Proud to support our nation's children.", time: "1 day ago" },
+      { name: "Sumanth Narayanan", amount: 2000, note: "Jai Hind! May education reach every home.", time: "2 days ago" },
+    ]
+  },
+  "republic-day": {
+    slug: "republic-day",
+    title: "Republic Day Celebration — Empowering Tomorrow's Citizens",
+    occasion: "Festival",
+    creator_name: "Education First Network",
+    creator_avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop",
+    cover_image_url: "https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1200&auto=format&fit=crop",
+    target_amount: 40000,
+    raised_amount: 32500,
+    supporters_count: 38,
+    cause_title: "Constitutional Literacy & School Bag Grants",
+    dedication_note: "Distributing school bags, uniforms, and learning essentials to children of migrant construction laborers on Republic Day.",
+    created_at: "2026-01-20",
+    recent_supporters: [
+      { name: "Advocate Pooja Rao", amount: 3500, note: "Empowering every child with their right to learn.", time: "3 days ago" },
+      { name: "Alok Gupta", amount: 1500, note: "Happy Republic Day!", time: "4 days ago" },
+    ]
+  },
+  "merry-christmas": {
+    slug: "merry-christmas",
+    title: "Merry Christmas & Joy of Giving — Warmth & Gifts for Destitute Elders",
+    occasion: "Festival",
+    creator_name: "CHAH Winter Care Circle",
+    creator_avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=300&auto=format&fit=crop",
+    cover_image_url: "https://images.unsplash.com/photo-1543258103-a62bd961387e?q=80&w=1200&auto=format&fit=crop",
+    target_amount: 45000,
+    raised_amount: 39000,
+    supporters_count: 53,
+    cause_title: "Winter Blankets, Plum Cakes & Thermal Woollens",
+    dedication_note: "Sharing Christmas joy and warm winter survival kits with homeless elderly and shelter children to protect them against harsh winter winds.",
+    created_at: "2026-12-18",
+    recent_supporters: [
+      { name: "David & Cheryl D'Souza", amount: 5000, note: "Merry Christmas! Joy and peace to everyone.", time: "Recently" },
+      { name: "Tanya Sen", amount: 2000, note: "Blessed to be able to help.", time: "Recently" },
+    ]
+  },
+  "eid-celebration": {
+    slug: "eid-celebration",
+    title: "Eid Celebration — Sharing Festive Meals & Care Hampers",
+    occasion: "Festival",
+    creator_name: "Unity in Compassion Forum",
+    creator_avatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?q=80&w=300&auto=format&fit=crop",
+    cover_image_url: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=1200&auto=format&fit=crop",
+    target_amount: 40000,
+    raised_amount: 34800,
+    supporters_count: 47,
+    cause_title: "Dry Ration Kits, Sewaiyan & New Festive Clothes",
+    dedication_note: "Ensuring no underprivileged family goes without delicious festive meals on Eid by providing grocery ration kits and new clothes to children.",
+    created_at: "2026-04-10",
+    recent_supporters: [
+      { name: "Farhan & Shagufta", amount: 4000, note: "Eid Mubarak! May peace and barakah fill every home.", time: "1 day ago" },
+      { name: "Zubair Ahmed", amount: 2500, note: "Happy to support CHAH Foundation.", time: "2 days ago" },
+    ]
+  },
+  "dahi-handi": {
+    slug: "dahi-handi",
+    title: "Dahi Handi & Janmashtami Celebration — Bringing Smiles to Kids",
+    occasion: "Festival",
+    creator_name: "Bal Gopal Care Initiative",
+    creator_avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=300&auto=format&fit=crop",
+    cover_image_url: "https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=1200&auto=format&fit=crop",
+    target_amount: 30000,
+    raised_amount: 24600,
+    supporters_count: 31,
+    cause_title: "Dairy Nutrition, Butter & Wholesome Meals",
+    dedication_note: "Organizing joyous community Dahi Handi celebrations with fresh milk, curd, fruits, and nutritious delicacies for street children.",
+    created_at: "2026-08-25",
+    recent_supporters: [
+      { name: "Girish Kulkarni", amount: 2000, note: "Govinda Aala Re! Joy to all little ones.", time: "2 days ago" },
+      { name: "Vandana Joshi", amount: 1500, note: "Jai Shri Krishna!", time: "3 days ago" },
+    ]
+  },
+  "happy-holi": {
+    slug: "happy-holi",
+    title: "Happy Holi — Colors of Compassion & Food Distribution Drive",
+    occasion: "Festival",
+    creator_name: "Colors of Hope Team",
+    creator_avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300&auto=format&fit=crop",
+    cover_image_url: "https://images.unsplash.com/photo-1533227268428-f9ed0900fb3b?q=80&w=1200&auto=format&fit=crop",
+    target_amount: 35000,
+    raised_amount: 31000,
+    supporters_count: 45,
+    cause_title: "Organic Herbal Colors, Gujiyas & Festive Feast",
+    dedication_note: "Celebrating safe, eco-friendly herbal Holi with destitutes and elderly residents, accompanied by freshly prepared festive lunches.",
+    created_at: "2026-03-20",
+    recent_supporters: [
+      { name: "Manoj Agarwal", amount: 3000, note: "Happy Holi! Keep spreading colors of kindness.", time: "Yesterday" },
+      { name: "Shalini Dixit", amount: 2000, note: "Wonderful work by CHAH volunteers.", time: "3 days ago" },
+    ]
   }
 };
 

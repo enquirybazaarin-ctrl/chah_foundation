@@ -11,8 +11,14 @@ export const createCampaignSchema = z.object({
     beneficiary_name: z.string().max(200).optional().nullable().or(z.literal('')),
     beneficiary_age: z.number().int().min(0).max(150).optional().nullable(),
     location: z.string().max(200).optional().nullable().or(z.literal('')),
-    target_amount: z.number().min(0).optional().nullable(),
-    raised_amount: z.number().min(0).optional().nullable(),
+    target_amount: z.union([
+      z.number().min(0),
+      z.string().regex(/^\d+(\.\d+)?$/).transform(n => Number(n))
+    ]).optional().nullable(),
+    raised_amount: z.union([
+      z.number().min(0),
+      z.string().regex(/^\d+(\.\d+)?$/).transform(n => Number(n))
+    ]).optional().nullable(),
     start_date: z.string().optional().nullable().or(z.literal('')),
     end_date: z.string().optional().nullable().or(z.literal('')),
     content: z.string().min(1),
@@ -54,8 +60,14 @@ export const updateCampaignSchema = z.object({
     beneficiary_name: z.string().max(200).optional().nullable().or(z.literal('')),
     beneficiary_age: z.number().int().min(0).max(150).optional().nullable(),
     location: z.string().max(200).optional().nullable().or(z.literal('')),
-    target_amount: z.number().min(0).optional().nullable(),
-    raised_amount: z.number().min(0).optional().nullable(),
+    target_amount: z.union([
+      z.number().min(0),
+      z.string().regex(/^\d+(\.\d+)?$/).transform(n => Number(n))
+    ]).optional().nullable(),
+    raised_amount: z.union([
+      z.number().min(0),
+      z.string().regex(/^\d+(\.\d+)?$/).transform(n => Number(n))
+    ]).optional().nullable(),
     start_date: z.string().optional().nullable().or(z.literal('')),
     end_date: z.string().optional().nullable().or(z.literal('')),
     content: z.string().min(1).optional(),

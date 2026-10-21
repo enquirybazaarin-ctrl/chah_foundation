@@ -3,15 +3,29 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { cn } from "cn";
-import { Menu, X, ChevronDown, ChevronRight, Heart } from "lucide-react";
+import { Menu, X, ChevronDown, ChevronRight, Heart, ArrowRight } from "lucide-react";
+
+export const CELEBRATION_ITEMS = [
+  { title: "Rakshabandhan Celebration", slug: "rakshabandhan-celebration", href: "/celebrate/rakshabandhan-celebration" },
+  { title: "Independence Day", slug: "independence-day", href: "/celebrate/independence-day" },
+  { title: "Republic Day", slug: "republic-day", href: "/celebrate/republic-day" },
+  { title: "Merry Christmas", slug: "merry-christmas", href: "/celebrate/merry-christmas" },
+  { title: "Eid Celebration", slug: "eid-celebration", href: "/celebrate/eid-celebration" },
+  { title: "Dahi Handi", slug: "dahi-handi", href: "/celebrate/dahi-handi" },
+  { title: "Happy Holi", slug: "happy-holi", href: "/celebrate/happy-holi" },
+];
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [isCelebrationsMobileOpen, setIsCelebrationsMobileOpen] = useState(false);
 
   const toggleMenu = () => {
     setIsMobileMenuOpen((prev) => !prev);
-    if (isMobileMenuOpen) setExpandedSection(null);
+    if (isMobileMenuOpen) {
+      setExpandedSection(null);
+      setIsCelebrationsMobileOpen(false);
+    }
   };
 
   const toggleSection = (section: string) => {
@@ -100,13 +114,45 @@ export function Header() {
             <button className="hover:text-[#95c718] transition-colors flex items-center gap-1 py-4 font-medium cursor-pointer">
               Programs <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
             </button>
-            <div className="absolute top-full left-0 mt-0 w-80 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-1 group-hover:translate-y-0 bg-white shadow-xl rounded-b-xl border-t-2 border-[#95c718] overflow-hidden z-50">
-              <div className="flex flex-col py-2 max-h-[70vh] overflow-y-auto">
+            <div className="absolute top-full left-0 mt-0 w-80 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-1 group-hover:translate-y-0 bg-white shadow-xl rounded-b-xl border-t-2 border-[#95c718] overflow-visible z-50">
+              <div className="flex flex-col py-2">
                 <Link href="/programs" className="px-4 py-2 font-bold text-[#003399] hover:bg-lime-50 transition-colors text-sm border-b border-gray-100">All Programs &amp; Drives</Link>
                 <Link href="/programs/education-support-drive" className="px-4 py-2 hover:bg-lime-50 hover:text-[#003399] transition-colors text-sm">Education Support Drive</Link>
                 <Link href="/programs/health-support-drive" className="px-4 py-2 hover:bg-lime-50 hover:text-[#003399] transition-colors text-sm">Health Support Drive</Link>
                 <Link href="/programs/dog-food-donation-drive" className="px-4 py-2 hover:bg-lime-50 hover:text-[#003399] transition-colors text-sm">Dog Food Donation Drive</Link>
-                <Link href="/programs/celebrations" className="px-4 py-2 hover:bg-lime-50 hover:text-[#003399] transition-colors text-sm">Celebrations</Link>
+
+                {/* Celebrations with Submenu Flyout (Matches screenshot exactly) */}
+                <div className="relative group/sub">
+                  <div className="flex items-center justify-between px-4 py-2 hover:bg-lime-50 text-slate-700 hover:text-[#003399] transition-colors text-sm cursor-pointer group-hover/sub:bg-lime-50 group-hover/sub:text-[#003399]">
+                    <Link href="/programs/celebrations" className="flex-1">
+                      Celebrations
+                    </Link>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover/sub:text-[#003399] group-hover/sub:translate-x-0.5 transition-all shrink-0" />
+                  </div>
+
+                  {/* Flyout Submenu Panel on hover */}
+                  <div className="absolute top-0 left-full pl-2 opacity-0 invisible group-hover/sub:opacity-100 group-hover/sub:visible transition-all duration-200 z-50">
+                    <div className="w-72 bg-white shadow-2xl rounded-xl border border-slate-200/90 border-l-4 border-l-[#95c718] py-2">
+                      <div className="px-4 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 mb-1 flex items-center justify-between">
+                        <span>Celebrations</span>
+                        <span className="text-[10px] bg-lime-100 text-lime-800 font-bold px-2 py-0.5 rounded-full">
+                          7 Drives
+                        </span>
+                      </div>
+                      {CELEBRATION_ITEMS.map((item) => (
+                        <Link
+                          key={item.slug}
+                          href={item.href}
+                          className="px-4 py-2 hover:bg-lime-50 hover:text-[#003399] text-slate-700 font-medium transition-colors text-xs flex items-center justify-between group/item"
+                        >
+                          <span className="group-hover/item:font-bold">{item.title}</span>
+                          <span className="text-slate-300 group-hover/item:text-[#95c718] transition-colors font-bold">&rarr;</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
                 <Link href="/programs/blanket-donation-drive" className="px-4 py-2 hover:bg-lime-50 hover:text-[#003399] transition-colors text-sm">Blanket Donation Drive</Link>
                 <Link href="/programs/women-empowerment-drive" className="px-4 py-2 hover:bg-lime-50 hover:text-[#003399] transition-colors text-sm">Women Empowerment Drive</Link>
                 <Link href="/programs/environment-drive" className="px-4 py-2 hover:bg-lime-50 hover:text-[#003399] transition-colors text-sm">Environment Drive</Link>
@@ -210,7 +256,41 @@ export function Header() {
                     <Link href="/programs/education-support-drive" onClick={toggleMenu} className="px-3 py-2 rounded hover:text-[#003399]">Education Support Drive</Link>
                     <Link href="/programs/health-support-drive" onClick={toggleMenu} className="px-3 py-2 rounded hover:text-[#003399]">Health Support Drive</Link>
                     <Link href="/programs/dog-food-donation-drive" onClick={toggleMenu} className="px-3 py-2 rounded hover:text-[#003399]">Dog Food Donation Drive</Link>
-                    <Link href="/programs/celebrations" onClick={toggleMenu} className="px-3 py-2 rounded hover:text-[#003399]">Celebrations</Link>
+                    {/* Celebrations Mobile Sub-Accordion */}
+                    <div className="flex flex-col rounded-lg bg-white/80 border border-slate-200/80 overflow-hidden my-1">
+                      <div className="flex items-center justify-between px-3 py-2">
+                        <Link href="/programs/celebrations" onClick={toggleMenu} className="font-semibold text-slate-800 hover:text-[#003399]">
+                          Celebrations
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setIsCelebrationsMobileOpen(!isCelebrationsMobileOpen);
+                          }}
+                          className="p-1 rounded hover:bg-slate-200/60 cursor-pointer"
+                          aria-label="Toggle Celebrations Submenu"
+                        >
+                          <ChevronDown className={cn("w-4 h-4 text-slate-500 transition-transform duration-200", isCelebrationsMobileOpen && "rotate-180")} />
+                        </button>
+                      </div>
+                      {isCelebrationsMobileOpen && (
+                        <div className="flex flex-col pl-3 pr-2 py-1.5 space-y-1 bg-lime-50/60 border-t border-slate-100">
+                          {CELEBRATION_ITEMS.map((item) => (
+                            <Link
+                              key={item.slug}
+                              href={item.href}
+                              onClick={toggleMenu}
+                              className="px-2.5 py-1.5 text-xs text-slate-700 hover:text-[#003399] font-medium transition-colors flex items-center justify-between"
+                            >
+                              <span>{item.title}</span>
+                              <span className="text-slate-400 text-[10px]">&rarr;</span>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <Link href="/programs/blanket-donation-drive" onClick={toggleMenu} className="px-3 py-2 rounded hover:text-[#003399]">Blanket Donation Drive</Link>
                     <Link href="/programs/women-empowerment-drive" onClick={toggleMenu} className="px-3 py-2 rounded hover:text-[#003399]">Women Empowerment Drive</Link>
                     <Link href="/programs/environment-drive" onClick={toggleMenu} className="px-3 py-2 rounded hover:text-[#003399]">Environment Drive</Link>

@@ -100,7 +100,7 @@ export default function CampaignDetailView({ campaign, initialSupporters = [] }:
   const donateUrl = `/donate?campaign=${campaign.id || campaign.slug}`;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Left Column - Main Content */}
       <div className="lg:col-span-2 space-y-6">
         <div>
@@ -396,60 +396,62 @@ export default function CampaignDetailView({ campaign, initialSupporters = [] }:
         </div>
       </div>
 
-      {/* Right Column - Sticky Donation Panel */}
-      <div className="lg:col-span-1 lg:sticky lg:top-24 self-start">
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200/90 p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Heart className="w-5 h-5 text-[#003399]" />
-              <span className="text-lg font-bold text-gray-900">Support This Cause</span>
+      {/* Right Column - Fixed Sticky Donation Panel */}
+      <div className="lg:col-span-1 h-full">
+        <div className="lg:sticky lg:top-28 z-20 space-y-6">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200/90 p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Heart className="w-5 h-5 text-[#003399]" />
+                <span className="text-lg font-bold text-gray-900">Support This Cause</span>
+              </div>
+              <span className="text-xs font-semibold text-lime-700 bg-lime-50 border border-lime-200 px-2.5 py-1 rounded-full">
+                80G Tax Benefit
+              </span>
             </div>
-            <span className="text-xs font-semibold text-lime-700 bg-lime-50 border border-lime-200 px-2.5 py-1 rounded-full">
-              80G Tax Benefit
-            </span>
-          </div>
 
-          <div className="flex items-center gap-4">
-            <div className="relative w-18 h-18 shrink-0">
-              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="40" stroke="#e5e7eb" strokeWidth="8" fill="transparent" />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  stroke="#22c55e"
-                  strokeWidth="8"
-                  fill="transparent"
-                  strokeDasharray={`${2 * Math.PI * 40}`}
-                  strokeDashoffset={`${2 * Math.PI * 40 * (1 - percent / 100)}`}
-                  strokeLinecap="round"
-                  className="transition-all duration-1000 ease-out"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-sm font-bold text-gray-800">{percent}%</span>
+            <div className="flex items-center gap-4">
+              <div className="relative w-18 h-18 shrink-0">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="40" stroke="#e5e7eb" strokeWidth="8" fill="transparent" />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    stroke="#22c55e"
+                    strokeWidth="8"
+                    fill="transparent"
+                    strokeDasharray={`${2 * Math.PI * 40}`}
+                    strokeDashoffset={`${2 * Math.PI * 40 * (1 - percent / 100)}`}
+                    strokeLinecap="round"
+                    className="transition-all duration-1000 ease-out"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-sm font-bold text-gray-800">{percent}%</span>
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500 font-semibold mb-0.5">Raised of {formatMoney(target)}</div>
+                <div className="text-xl font-black text-lime-700">{formatMoney(raised)}</div>
+                <div className="text-[11px] text-gray-400 mt-0.5">{campaign.supporters_count || 0} donors contributed</div>
               </div>
             </div>
-            <div>
-              <div className="text-xs text-gray-500 font-semibold mb-0.5">Raised of {formatMoney(target)}</div>
-              <div className="text-xl font-black text-lime-700">{formatMoney(raised)}</div>
-              <div className="text-[11px] text-gray-400 mt-0.5">{campaign.supporters_count || 0} donors contributed</div>
+
+            <Link
+              href={donateUrl}
+              className="block w-full py-4 bg-[#003399] hover:bg-[#00246a] text-white text-center text-base font-bold rounded-xl shadow-md transition-all cursor-pointer"
+            >
+              Donate Now
+            </Link>
+
+            <p className="text-center text-xs text-gray-500 font-medium">
+              UPI, Cards, NetBanking • Instant 80G Receipt
+            </p>
+
+            <div className="pt-4 border-t border-gray-100 flex items-center justify-center gap-2 text-[11px] text-gray-400">
+              <span>🔒 256-Bit SSL Secured Payment</span>
             </div>
-          </div>
-
-          <Link
-            href={donateUrl}
-            className="block w-full py-4 bg-[#003399] hover:bg-[#00246a] text-white text-center text-base font-bold rounded-xl shadow-md transition-all cursor-pointer"
-          >
-            Donate Now
-          </Link>
-
-          <p className="text-center text-xs text-gray-500 font-medium">
-            UPI, Cards, NetBanking • Instant 80G Receipt
-          </p>
-
-          <div className="pt-4 border-t border-gray-100 flex items-center justify-center gap-2 text-[11px] text-gray-400">
-            <span>🔒 256-Bit SSL Secured Payment</span>
           </div>
         </div>
       </div>
