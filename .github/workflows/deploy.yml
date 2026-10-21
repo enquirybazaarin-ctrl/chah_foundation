@@ -1,4 +1,5 @@
 name: CHAH Foundation CI/CD Deploy
+# Auto-deployment to Hostinger (Websites, Admin, Backend)
 
 on:
   push:
