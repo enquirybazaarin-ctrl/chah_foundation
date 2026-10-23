@@ -41,8 +41,13 @@ export async function getCampaignsAdmin(
  * Fetch a single campaign by ID (includes full content field).
  */
 export async function getCampaignById(id: string): Promise<Campaign> {
-  const res = await api.get<ApiResponse<Campaign>>(`/api/v1/campaigns/${id}`);
-  return res.data.data;
+  try {
+    const res = await api.get<ApiResponse<Campaign>>(`/api/v1/campaigns/${id}`);
+    return res.data.data;
+  } catch {
+    const fallback = await api.get<ApiResponse<Campaign>>(`/api/v1/campaigns/id/${id}`);
+    return fallback.data.data;
+  }
 }
 
 /**

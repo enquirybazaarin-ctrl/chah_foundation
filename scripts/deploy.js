@@ -168,7 +168,16 @@ async function syncDir(clientHolder, localDir, remoteDir, appConfig, excludeDirs
       const remoteFile = remoteMap.get(fileName);
 
       const isAlways = appConfig.alwaysUpload.includes(fileName);
-      const needsUpload = isAlways || !remoteFile || remoteFile.size !== localStat.size;
+      const isServerDir = localDir.replace(/\\/g, '/').includes('.next/server');
+      const isCriticalServerFile = isServerDir && (
+        fileName.endsWith('manifest.js') || 
+        fileName.endsWith('.json') || 
+        fileName === 'page.js' || 
+        fileName.startsWith('page_') ||
+        fileName.endsWith('.rsc')
+      );
+      const isTimeNewer = Boolean(remoteFile && remoteFile.modifiedAt && (localStat.mtimeMs > remoteFile.modifiedAt.getTime() + 3000));
+      const needsUpload = isAlways || isCriticalServerFile || !remoteFile || remoteFile.size !== localStat.size || isTimeNewer;
 
       if (needsUpload) {
         process.stdout.write(`  ⬆️ [Upload] ${path.basename(localDir)}/${fileName} (${(localStat.size / 1024).toFixed(1)} KB)... `);
@@ -241,9 +250,10 @@ async function deployApp(appKey) {
             if (fs.existsSync(localFilePath)) {
               const localStat = fs.statSync(localFilePath);
               const remoteFile = remoteMap.get(fileName);
-              const isAlways = appConfig.alwaysUpload.includes(fileName);
+              const isAlways = appConfig.alwaysUpload.includes(fileName) || item.localSub === '.next';
+              const isTimeNewer = Boolean(remoteFile && remoteFile.modifiedAt && (localStat.mtimeMs > remoteFile.modifiedAt.getTime() + 3000));
 
-              if (isAlways || !remoteFile || remoteFile.size !== localStat.size) {
+              if (isAlways || !remoteFile || remoteFile.size !== localStat.size || isTimeNewer) {
                 process.stdout.write(`  ⬆️ [File] ${fileName} (${(localStat.size / 1024).toFixed(1)} KB)... `);
                 await executeWithRetry(clientHolder, remoteFolder, client => client.uploadFrom(localFilePath, fileName));
                 process.stdout.write('✅\n');

@@ -12,8 +12,9 @@ api.interceptors.response.use(
     // If we receive a 401, it means the token is expired or invalid
     if (error.response) {
       if (error.response.status === 401) {
-        // Avoid redirecting if we are already on the login page
-        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        // Only redirect to login if the auth session check (/api/v1/auth/me) returns 401
+        const requestUrl = error.config?.url || '';
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login' && requestUrl.includes('/api/v1/auth/me')) {
           window.location.href = '/login';
         }
       } else if (error.response.status === 403) {
