@@ -26,7 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false); // Set to false initially in dev to prevent flash
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   const fetchSession = useCallback(async () => {

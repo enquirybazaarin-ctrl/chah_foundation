@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { ArrowLeft, CheckCircle, Archive, ExternalLink } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
@@ -13,8 +12,9 @@ import { getBlogById, updateBlog, archiveBlog } from '@/lib/cms.api';
 import { formatDate } from '@/lib/utils';
 import type { Blog, CreateBlogPayload, UpdateBlogPayload } from '@/lib/types';
 
-export default function BlogDetailPage() {
-  const { id } = useParams<{ id: string }>();
+function BlogDetailContent() {
+  const routeParams = useParams<{ id: string }>();
+  const id = routeParams?.id as string;
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -25,7 +25,7 @@ export default function BlogDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(
-    searchParams.get('created') === '1' ? 'Blog post created successfully!' : null
+    searchParams?.get('created') === '1' ? 'Blog post created successfully!' : null
   );
 
   const [archiveConfirm, setArchiveConfirm] = useState(false);
@@ -282,5 +282,30 @@ function MetaCell({
         )}
       </dd>
     </div>
+  );
+}
+
+function BlogDetailSkeleton() {
+  return (
+    <div className="max-w-3xl space-y-6">
+      <Skeleton className="h-5 w-36" />
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden p-6 space-y-4">
+        <Skeleton className="h-7 w-64" />
+        <Skeleton className="h-4 w-40" />
+      </div>
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 space-y-4">
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    </div>
+  );
+}
+
+export default function BlogDetailPage() {
+  return (
+    <Suspense fallback={<BlogDetailSkeleton />}>
+      <BlogDetailContent />
+    </Suspense>
   );
 }

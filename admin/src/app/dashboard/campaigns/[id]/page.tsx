@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
@@ -17,8 +16,9 @@ import {
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Campaign, CreateCampaignPayload, UpdateCampaignPayload } from '@/lib/types';
 
-export default function CampaignDetailPage() {
-  const { id } = useParams<{ id: string }>();
+function CampaignDetailContent() {
+  const routeParams = useParams<{ id: string }>();
+  const id = routeParams?.id as string;
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -29,7 +29,7 @@ export default function CampaignDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(
-    searchParams.get('created') === '1' ? 'Campaign created successfully!' : null
+    searchParams?.get('created') === '1' ? 'Campaign created successfully!' : null
   );
 
   const [cancelConfirm, setCancelConfirm] = useState(false);
@@ -303,5 +303,36 @@ function StatCell({
         )}
       </dd>
     </div>
+  );
+}
+
+function CampaignDetailSkeleton() {
+  return (
+    <div className="max-w-3xl space-y-6">
+      <Skeleton className="h-5 w-36" />
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden p-6 space-y-4">
+        <Skeleton className="h-7 w-64" />
+        <Skeleton className="h-4 w-40" />
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 pt-4 border-t border-gray-100">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      </div>
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 space-y-4">
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-28 w-full" />
+      </div>
+    </div>
+  );
+}
+
+export default function CampaignDetailPage() {
+  return (
+    <Suspense fallback={<CampaignDetailSkeleton />}>
+      <CampaignDetailContent />
+    </Suspense>
   );
 }
